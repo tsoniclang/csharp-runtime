@@ -183,6 +183,33 @@ namespace Tsonic.CSharp.Runtime
             Func<T, TSource> write) =>
             source is null ? null : Project(source, read, write);
 
+        public static Location<T> View<TSource>(
+            Location<TSource> source,
+            Func<T> read,
+            Action<T> write)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(read);
+            ArgumentNullException.ThrowIfNull(write);
+            return new Location<T>(source._identity,
+                () =>
+                {
+                    try { return read(); }
+                    finally { GC.KeepAlive(source); }
+                },
+                value =>
+                {
+                    try { write(value); }
+                    finally { GC.KeepAlive(source); }
+                });
+        }
+
+        public static Location<T>? ViewOptional<TSource>(
+            Location<TSource>? source,
+            Func<T> read,
+            Action<T> write) =>
+            source is null ? null : View(source, read, write);
+
         public static bool Same(Location<T>? left, Location<T>? right)
         {
             if (left is null || right is null)
