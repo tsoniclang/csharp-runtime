@@ -1,6 +1,6 @@
 namespace Tsonic.CSharp.Runtime;
 
-public sealed class EmptyObject
+public sealed class EmptyObject : ITsClosedValueCarrier
 {
     private bool _frozen;
 
