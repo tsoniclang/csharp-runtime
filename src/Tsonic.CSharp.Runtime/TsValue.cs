@@ -116,6 +116,7 @@ namespace Tsonic.CSharp.Runtime
                 string target when key == "length" => from(target.Length),
                 IDynamicArray target when key == "length" => from(target.Length),
                 IDynamicArray target when tryReadArrayIndexKey(key, out var index) => target.TryGetAt(index, out var value) ? from(value) : undefined(),
+                ITsClosedValueCarrier => throw new NotSupportedException("A closed identity carrier does not expose dynamic properties."),
                 _ => undefined()
             };
         }
