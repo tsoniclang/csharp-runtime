@@ -10,9 +10,6 @@ namespace Tsonic.CSharp.Runtime
     {
         private string _name = nameof(Error);
         private string _message = string.Empty;
-        private string? _stack;
-        private bool _hasStackOverride;
-        private readonly Lazy<string> _capturedStack;
 
         public Error()
             : this(null, null)
@@ -28,9 +25,13 @@ namespace Tsonic.CSharp.Runtime
             : base(message, innerException)
         {
             _message = message ?? string.Empty;
+        }
+
+        public static void captureStackTrace(Error error)
+        {
+            ArgumentNullException.ThrowIfNull(error);
             var origin = new StackTrace(1, true);
-            _capturedStack = new Lazy<string>(() =>
-                (_message.Length == 0 ? name : name + ": " + _message) + "\n" + origin);
+            error.stack = (error._message.Length == 0 ? error.name : error.name + ": " + error._message) + "\n" + origin;
         }
 
         public virtual string name
@@ -45,15 +46,7 @@ namespace Tsonic.CSharp.Runtime
             set => _message = value;
         }
 
-        public string? stack
-        {
-            get => _hasStackOverride ? _stack : _capturedStack.Value;
-            set
-            {
-                _stack = value;
-                _hasStackOverride = true;
-            }
-        }
+        public string? stack { get; set; }
 
         public override string Message => _message;
     }
