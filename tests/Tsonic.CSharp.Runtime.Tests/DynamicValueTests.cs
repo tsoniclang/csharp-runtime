@@ -176,6 +176,29 @@ namespace Tsonic.CSharp.Runtime.Tests
 
             public int Length => _values.Count;
 
+            public bool HasOwn(string key) => TryReadDynamicSlot(key, out _);
+
+            public IEnumerable<KeyValuePair<string, object?>> Entries()
+            {
+                for (var index = 0; index < Length; index++)
+                    if (TryGetAt(index, out var value)) yield return new(index.ToString(System.Globalization.CultureInfo.InvariantCulture), value);
+            }
+
+            public bool TryReadDynamicSlot(string key, out object? value)
+            {
+                if (key == "length") { value = Length; return true; }
+                if (int.TryParse(key, out var index) && key == index.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                    return TryGetAt(index, out value);
+                value = null;
+                return false;
+            }
+
+            public void WriteDynamicSlot(string key, object? value)
+            {
+                if (int.TryParse(key, out var index) && key == index.ToString(System.Globalization.CultureInfo.InvariantCulture) && TrySetAt(index, value)) return;
+                throw new TypeError("Unknown test-array property");
+            }
+
             public bool HasIndex(int index)
             {
                 return _present.Contains(index);
