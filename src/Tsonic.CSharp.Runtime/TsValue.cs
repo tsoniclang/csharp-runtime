@@ -114,8 +114,6 @@ namespace Tsonic.CSharp.Runtime
                 IDictionary<string, object?> target => target.TryGetValue(key, out var value) ? from(value) : undefined(),
                 IReadOnlyDictionary<string, object?> target => target.TryGetValue(key, out var value) ? from(value) : undefined(),
                 string target when key == "length" => from(target.Length),
-                IDynamicArray target when key == "length" => from(target.Length),
-                IDynamicArray target when tryReadArrayIndexKey(key, out var index) => target.TryGetAt(index, out var value) ? from(value) : undefined(),
                 ITsClosedValueCarrier => throw new NotSupportedException("A closed identity carrier does not expose dynamic properties."),
                 _ => undefined()
             };
@@ -146,15 +144,6 @@ namespace Tsonic.CSharp.Runtime
                     return target.WriteDynamicSlot(key, stored);
                 case TsFunction target:
                     return target.WriteDynamicSlot(key, stored);
-                case IDynamicArray target when key == "length":
-                    target.SetLength(toArrayIndex(stored.unwrap()));
-                    return from(target.Length);
-                case IDynamicArray target when tryReadArrayIndexKey(key, out var index):
-                    if (!target.TrySetAt(index, stored.unwrap()))
-                    {
-                        throw new TypeError($"Cannot store value in closed JavaScript array index '{key}' because the element carrier is incompatible.");
-                    }
-                    return stored;
                 case IDynamicObject target:
                     target.WriteDynamicSlot(key, stored.unwrap());
                     return stored;
@@ -396,7 +385,6 @@ namespace Tsonic.CSharp.Runtime
                 TsUnion => true,
                 TsFunction => true,
                 IDynamicObject => true,
-                IDynamicArray => true,
                 Error => true,
                 Exception => true,
                 Undefined => true,
@@ -644,24 +632,6 @@ namespace Tsonic.CSharp.Runtime
         private static NotSupportedException closedCarrierError()
         {
             return new NotSupportedException("TsValue requires a closed TypeScript runtime carrier.");
-        }
-
-        private static bool tryReadArrayIndexKey(string key, out int index)
-        {
-            if (!int.TryParse(key, NumberStyles.None, CultureInfo.InvariantCulture, out index))
-            {
-                return false;
-            }
-
-            return index >= 0 && key == index.ToString(CultureInfo.InvariantCulture);
-        }
-
-        private static int toArrayIndex(object? value)
-        {
-            var key = propertyKey(value);
-            return tryReadArrayIndexKey(key, out var index)
-                ? index
-                : throw new RangeError("Invalid array length.");
         }
 
         private static TypeError nullishReadError(string key)

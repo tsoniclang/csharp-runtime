@@ -148,6 +148,9 @@ namespace Tsonic.CSharp.Runtime.Tests
             Assert.Equal(2, value.ReadDynamicSlot("length").unwrap());
             Assert.Same(Undefined.value, value.ReadDynamicElement(0).unwrap());
             Assert.Equal("second", value.ReadDynamicElement(1).unwrap());
+            value.WriteDynamicSlot("length", 1);
+            Assert.Equal(1, target.Length);
+            Assert.True(value.ReadDynamicElement(1).isUndefined());
         }
 
         private sealed class OpenObject
@@ -195,6 +198,12 @@ namespace Tsonic.CSharp.Runtime.Tests
 
             public void WriteDynamicSlot(string key, object? value)
             {
+                if (key == "length")
+                {
+                    if (value is not int length || length < 0) throw new RangeError("Invalid test-array length");
+                    SetLength(length);
+                    return;
+                }
                 if (int.TryParse(key, out var index) && key == index.ToString(System.Globalization.CultureInfo.InvariantCulture) && TrySetAt(index, value)) return;
                 throw new TypeError("Unknown test-array property");
             }
