@@ -13,6 +13,8 @@ namespace Tsonic.CSharp.Runtime
     /// </summary>
     public sealed class Union<T1, T2>
     {
+        public TResult AsReference<TResult>() where TResult : class => (TResult)_value!;
+
         private readonly object? _value;
         private readonly int _index; // 0 for T1, 1 for T2
 
@@ -166,6 +168,8 @@ namespace Tsonic.CSharp.Runtime
     /// </summary>
     public sealed class Union<T1, T2, T3>
     {
+        public TResult AsReference<TResult>() where TResult : class => (TResult)_value!;
+
         private readonly object? _value;
         private readonly int _index; // 0 for T1, 1 for T2, 2 for T3
 
@@ -315,6 +319,8 @@ namespace Tsonic.CSharp.Runtime
     /// </summary>
     public sealed class Union<T1, T2, T3, T4>
     {
+        public TResult AsReference<TResult>() where TResult : class => (TResult)_value!;
+
         private readonly object? _value;
         private readonly int _index;
 
@@ -380,6 +386,8 @@ namespace Tsonic.CSharp.Runtime
     /// </summary>
     public sealed class Union<T1, T2, T3, T4, T5>
     {
+        public TResult AsReference<TResult>() where TResult : class => (TResult)_value!;
+
         private readonly object? _value;
         private readonly int _index;
 
@@ -454,6 +462,8 @@ namespace Tsonic.CSharp.Runtime
     /// </summary>
     public sealed class Union<T1, T2, T3, T4, T5, T6>
     {
+        public TResult AsReference<TResult>() where TResult : class => (TResult)_value!;
+
         private readonly object? _value;
         private readonly int _index;
 
@@ -537,6 +547,8 @@ namespace Tsonic.CSharp.Runtime
     /// </summary>
     public sealed class Union<T1, T2, T3, T4, T5, T6, T7>
     {
+        public TResult AsReference<TResult>() where TResult : class => (TResult)_value!;
+
         private readonly object? _value;
         private readonly int _index;
 
@@ -629,6 +641,8 @@ namespace Tsonic.CSharp.Runtime
     /// </summary>
     public sealed class Union<T1, T2, T3, T4, T5, T6, T7, T8>
     {
+        public TResult AsReference<TResult>() where TResult : class => (TResult)_value!;
+
         private readonly object? _value;
         private readonly int _index;
 
