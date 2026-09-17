@@ -7,6 +7,38 @@ namespace Tsonic.CSharp.Runtime.Tests
     public sealed class LocationTests
     {
         [Fact]
+        public void DirectViewsRetainIdentityWithoutCallingTheBaseOrReadingBeforeWrite()
+        {
+            var source = Location<int>.Bind(new object(),
+                () => throw new Exception("base reads must not occur"),
+                _ => throw new Exception("base writes must not occur"));
+            long value = 5;
+            var reads = 0;
+            var view = Location<long>.View(source, () => { reads++; return value; }, next => value = next);
+            Assert.Equal(Location<int>.Hash(source), Location<long>.Hash(view));
+            Assert.Equal(0, reads);
+            view.Store(9);
+            Assert.Equal(0, reads);
+            Assert.Equal(9L, value);
+            Assert.Equal(9L, view.Load());
+            Assert.Equal(1, reads);
+            Assert.Null(Location<long>.ViewOptional<int>(null,
+                () => throw new Exception("absent read"), _ => throw new Exception("absent write")));
+        }
+
+        [Fact]
+        public void DirectViewsPropagateTheExactReadAndWriteExceptions()
+        {
+            var source = Location<int>.Allocate(1);
+            var readError = new InvalidOperationException("read");
+            var writeError = new InvalidOperationException("write");
+            var view = Location<int>.View(source, () => throw readError, _ => throw writeError);
+            Assert.Same(readError, Assert.Throws<InvalidOperationException>(() => view.Load()));
+            Assert.Same(writeError, Assert.Throws<InvalidOperationException>(() => view.Store(3)));
+            Assert.Equal(1, source.Load());
+        }
+
+        [Fact]
         public void BoundAndProjectedLocationsPreserveStorageAndHash()
         {
             var identity = new object();

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 
 namespace Tsonic.CSharp.Runtime
 {
@@ -9,22 +10,28 @@ namespace Tsonic.CSharp.Runtime
     {
         private string _name = nameof(Error);
         private string _message = string.Empty;
-        private string? _stack;
 
         public Error()
+            : this(null, null)
         {
         }
 
         public Error(string? message)
-            : base(message)
+            : this(message, null)
         {
-            _message = message ?? string.Empty;
         }
 
         public Error(string? message, Exception? innerException)
             : base(message, innerException)
         {
             _message = message ?? string.Empty;
+        }
+
+        public static void captureStackTrace(Error error)
+        {
+            ArgumentNullException.ThrowIfNull(error);
+            var origin = new StackTrace(1, true);
+            error.stack = (error._message.Length == 0 ? error.name : error.name + ": " + error._message) + "\n" + origin;
         }
 
         public virtual string name
@@ -39,11 +46,7 @@ namespace Tsonic.CSharp.Runtime
             set => _message = value;
         }
 
-        public string? stack
-        {
-            get => _stack ?? StackTrace;
-            set => _stack = value;
-        }
+        public string? stack { get; set; }
 
         public override string Message => _message;
     }
