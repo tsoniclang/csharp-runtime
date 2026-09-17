@@ -11,5 +11,7 @@ Canonical product documentation:
 - [C# type mapping](https://github.com/tsoniclang/tsonic/blob/main/docs/reference/targets/csharp/type-mapping.md)
 - [Provider and runtime ownership](https://github.com/tsoniclang/tsonic/blob/main/docs/architecture/provider-and-runtime-ownership.md)
 
-The npm package contains the canonical runtime artifacts under `runtimes/`.
-The C# target references them directly; it does not copy runtime source.
+The npm package contains C# source, its project, and build settings. The public
+`@tsonic/csharp-runtime/runtime.csproj` export identifies the native project.
+The C# target references it for the application's selected framework. Build
+outputs stay in the application's `.tsonic/cache`, not the installed package.
