@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!-- NuGet Package Properties -->
     <PackageId>Tsonic.CSharp.Runtime</PackageId>
     <Authors>Tsonic Project</Authors>
@@ -19,15 +20,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <Compile Include="$(MSBuildThisFileDirectory)**/*.cs" Exclude="$(MSBuildThisFileDirectory)bin/**;$(MSBuildThisFileDirectory)obj/**" />
+    <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
-
-  <Target Name="CopyInstalledRuntimeArtifact" AfterTargets="Build">
-    <PropertyGroup>
-      <TsonicRuntimeArtifactDirectory>$(MSBuildProjectDirectory)/../../runtimes/$(TargetFramework)</TsonicRuntimeArtifactDirectory>
-    </PropertyGroup>
-    <MakeDir Directories="$(TsonicRuntimeArtifactDirectory)" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(TsonicRuntimeArtifactDirectory)" />
-  </Target>
 
 </Project>

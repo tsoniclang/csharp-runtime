@@ -1,7 +1,7 @@
 {
   "name": "@tsonic/csharp-runtime",
   "version": "0.1.1",
-  "description": "C# core runtime artifacts for Tsonic",
+  "description": "C# core runtime source for Tsonic",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -9,12 +9,17 @@
   },
   "type": "module",
   "files": [
-    "runtimes",
+    "Directory.Build.props",
+    "src",
+    "!src/**/bin/**",
+    "!src/**/obj/**",
     "README.md",
     "LICENSE"
   ],
   "exports": {
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./runtime.csproj": "./src/Tsonic.CSharp.Runtime/Tsonic.CSharp.Runtime.csproj",
+    "./runtime.props": "./Directory.Build.props"
   },
   "engines": {
     "node": ">=22.18.0"
