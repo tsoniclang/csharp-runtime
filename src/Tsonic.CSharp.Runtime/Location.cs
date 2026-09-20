@@ -130,39 +130,33 @@ namespace Tsonic.CSharp.Runtime
         internal override int SegmentHash() => _index.GetHashCode();
     }
 
-    public sealed class Location<T>
+    public abstract class Location<T>
     {
         internal RawPointer? RawBacking { get; private init; }
-        private readonly LocationIdentity _identity;
-        private readonly Func<T> _load;
-        private readonly Action<T> _store;
+        private LocationIdentity? _identity;
+        private LocationIdentity Identity => _identity ??= new ReferenceLocationIdentity(this);
 
-        private Location(
-            LocationIdentity identity,
-            Func<T> load,
-            Action<T> store)
+        private Location() { }
+
+        private Location(LocationIdentity identity)
         {
             ArgumentNullException.ThrowIfNull(identity);
-            ArgumentNullException.ThrowIfNull(load);
-            ArgumentNullException.ThrowIfNull(store);
             _identity = identity;
-            _load = load;
-            _store = store;
         }
 
-        public T Load() => _load();
+        public abstract T Load();
 
-        public T Value { get => _load(); set => _store(value); }
+        public T Value { get => Load(); set => Store(value); }
 
         internal static Location<T> CreateNative(RawPointer pointer, Func<T> read, Action<T> write) =>
-            new Location<T>(new NativeLocationIdentity(pointer), read, write) { RawBacking = pointer };
+            new AccessorLocation(new NativeLocationIdentity(pointer), read, write) { RawBacking = pointer };
 
-        public void Store(T value) => _store(value);
+        public abstract void Store(T value);
 
-        public static double Hash(Location<T>? pointer) => pointer?._identity.Hash() ?? 0;
+        public static double Hash(Location<T>? pointer) => pointer?.Identity.Hash() ?? 0;
 
         public static Location<T> Bind(object identity, Func<T> read, Action<T> write) =>
-            new Location<T>(new ReferenceLocationIdentity(identity), read, write);
+            new AccessorLocation(new ReferenceLocationIdentity(identity), read, write);
 
         public static Location<T> Project<TSource>(
             Location<TSource> source,
@@ -172,7 +166,7 @@ namespace Tsonic.CSharp.Runtime
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(read);
             ArgumentNullException.ThrowIfNull(write);
-            return new Location<T>(source._identity,
+            return new AccessorLocation(source.Identity,
                 () => read(source.Load()),
                 value => source.Store(write(value)));
         }
@@ -191,7 +185,7 @@ namespace Tsonic.CSharp.Runtime
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(read);
             ArgumentNullException.ThrowIfNull(write);
-            return new Location<T>(source._identity,
+            return new AccessorLocation(source.Identity,
                 () =>
                 {
                     try { return read(); }
@@ -217,14 +211,14 @@ namespace Tsonic.CSharp.Runtime
                 return left is null && right is null;
             }
             return ReferenceEquals(left, right) ||
-                left._identity.Same(right._identity);
+                left.Identity.Same(right.Identity);
         }
 
         public static Location<T> CreateLocal(
             object storageIdentity,
             Func<T> load,
             Action<T> store) =>
-            new Location<T>(
+            new AccessorLocation(
                 new ReferenceLocationIdentity(storageIdentity),
                 load,
                 store);
@@ -233,7 +227,7 @@ namespace Tsonic.CSharp.Runtime
             string storageIdentity,
             Func<T> load,
             Action<T> store) =>
-            new Location<T>(
+            new AccessorLocation(
                 new StaticLocationIdentity(storageIdentity),
                 load,
                 store);
@@ -248,7 +242,7 @@ namespace Tsonic.CSharp.Runtime
             ArgumentNullException.ThrowIfNull(state);
             ArgumentNullException.ThrowIfNull(load);
             ArgumentNullException.ThrowIfNull(store);
-            return new Location<T>(
+            return new AccessorLocation(
                 new MemberLocationIdentity(
                     new ReferenceLocationIdentity(state),
                     memberIdentity),
@@ -277,11 +271,7 @@ namespace Tsonic.CSharp.Runtime
 
         public static Location<T> Allocate(T initial)
         {
-            var cell = new Cell(initial);
-            return new Location<T>(
-                new ReferenceLocationIdentity(cell),
-                () => cell.Value,
-                value => cell.Value = value);
+            return new OwnedLocation(initial);
         }
 
         public Location<TValue> ProjectMember<TValue>(
@@ -291,8 +281,8 @@ namespace Tsonic.CSharp.Runtime
         {
             ArgumentNullException.ThrowIfNull(load);
             ArgumentNullException.ThrowIfNull(store);
-            return new Location<TValue>(
-                new MemberLocationIdentity(_identity, memberIdentity),
+            return new Location<TValue>.AccessorLocation(
+                new MemberLocationIdentity(Identity, memberIdentity),
                 () => load(Load()),
                 value => Store(store(Load(), value)));
         }
@@ -307,7 +297,7 @@ namespace Tsonic.CSharp.Runtime
                 throw new IndexOutOfRangeException();
             }
             var exactIndex = checked((int)index);
-            return new Location<T>(
+            return new AccessorLocation(
                 new ArrayElementLocationIdentity(
                     new ReferenceLocationIdentity(storage),
                     index),
@@ -315,14 +305,35 @@ namespace Tsonic.CSharp.Runtime
                 value => storage[exactIndex] = value);
         }
 
-        private sealed class Cell
+        private sealed class OwnedLocation : Location<T>
         {
-            public Cell(T value)
+            private T _value;
+
+            public OwnedLocation(T value)
             {
-                Value = value;
+                _value = value;
             }
 
-            public T Value { get; set; }
+            public override T Load() => _value;
+            public override void Store(T value) => _value = value;
+        }
+
+        private sealed class AccessorLocation : Location<T>
+        {
+            private readonly Func<T> _load;
+            private readonly Action<T> _store;
+
+            public AccessorLocation(LocationIdentity identity, Func<T> load, Action<T> store)
+                : base(identity)
+            {
+                ArgumentNullException.ThrowIfNull(load);
+                ArgumentNullException.ThrowIfNull(store);
+                _load = load;
+                _store = store;
+            }
+
+            public override T Load() => _load();
+            public override void Store(T value) => _store(value);
         }
     }
 }
