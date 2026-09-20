@@ -30,9 +30,19 @@ namespace Tsonic.CSharp.Runtime
             return new TsValue(value);
         }
 
+        public static TsValue from<T1, T2>(Union<T1, T2> value)
+        {
+            return from(TsUnion.From<T1, T2>(value));
+        }
+
         public static TsValue from<T1, T2>(Union<T1, T2>? value)
         {
             return value is null ? from(null) : from(TsUnion.From(value));
+        }
+
+        public static TsValue from<T1, T2, T3>(Union<T1, T2, T3> value)
+        {
+            return from(TsUnion.From<T1, T2, T3>(value));
         }
 
         public static TsValue from<T1, T2, T3>(Union<T1, T2, T3>? value)
@@ -40,9 +50,19 @@ namespace Tsonic.CSharp.Runtime
             return value is null ? from(null) : from(TsUnion.From(value));
         }
 
+        public static TsValue from<T1, T2, T3, T4>(Union<T1, T2, T3, T4> value)
+        {
+            return from(TsUnion.From<T1, T2, T3, T4>(value));
+        }
+
         public static TsValue from<T1, T2, T3, T4>(Union<T1, T2, T3, T4>? value)
         {
             return value is null ? from(null) : from(TsUnion.From(value));
+        }
+
+        public static TsValue from<T1, T2, T3, T4, T5>(Union<T1, T2, T3, T4, T5> value)
+        {
+            return from(TsUnion.From<T1, T2, T3, T4, T5>(value));
         }
 
         public static TsValue from<T1, T2, T3, T4, T5>(Union<T1, T2, T3, T4, T5>? value)
@@ -50,14 +70,29 @@ namespace Tsonic.CSharp.Runtime
             return value is null ? from(null) : from(TsUnion.From(value));
         }
 
+        public static TsValue from<T1, T2, T3, T4, T5, T6>(Union<T1, T2, T3, T4, T5, T6> value)
+        {
+            return from(TsUnion.From<T1, T2, T3, T4, T5, T6>(value));
+        }
+
         public static TsValue from<T1, T2, T3, T4, T5, T6>(Union<T1, T2, T3, T4, T5, T6>? value)
         {
             return value is null ? from(null) : from(TsUnion.From(value));
         }
 
+        public static TsValue from<T1, T2, T3, T4, T5, T6, T7>(Union<T1, T2, T3, T4, T5, T6, T7> value)
+        {
+            return from(TsUnion.From<T1, T2, T3, T4, T5, T6, T7>(value));
+        }
+
         public static TsValue from<T1, T2, T3, T4, T5, T6, T7>(Union<T1, T2, T3, T4, T5, T6, T7>? value)
         {
             return value is null ? from(null) : from(TsUnion.From(value));
+        }
+
+        public static TsValue from<T1, T2, T3, T4, T5, T6, T7, T8>(Union<T1, T2, T3, T4, T5, T6, T7, T8> value)
+        {
+            return from(TsUnion.From<T1, T2, T3, T4, T5, T6, T7, T8>(value));
         }
 
         public static TsValue from<T1, T2, T3, T4, T5, T6, T7, T8>(Union<T1, T2, T3, T4, T5, T6, T7, T8>? value)

@@ -88,11 +88,11 @@ namespace Tsonic.CSharp.Runtime
             {
                 return From(1, 2, null);
             }
-            if (value.TryAs1(out var arm1))
+            if (value.Value.TryAs1(out var arm1))
             {
                 return From(1, 2, arm1);
             }
-            if (value.TryAs2(out var arm2))
+            if (value.Value.TryAs2(out var arm2))
             {
                 return From(2, 2, arm2);
             }
@@ -105,15 +105,15 @@ namespace Tsonic.CSharp.Runtime
             {
                 return From(1, 3, null);
             }
-            if (value.TryAs1(out var arm1))
+            if (value.Value.TryAs1(out var arm1))
             {
                 return From(1, 3, arm1);
             }
-            if (value.TryAs2(out var arm2))
+            if (value.Value.TryAs2(out var arm2))
             {
                 return From(2, 3, arm2);
             }
-            if (value.TryAs3(out var arm3))
+            if (value.Value.TryAs3(out var arm3))
             {
                 return From(3, 3, arm3);
             }
@@ -126,19 +126,19 @@ namespace Tsonic.CSharp.Runtime
             {
                 return From(1, 4, null);
             }
-            if (value.TryAs1(out var arm1))
+            if (value.Value.TryAs1(out var arm1))
             {
                 return From(1, 4, arm1);
             }
-            if (value.TryAs2(out var arm2))
+            if (value.Value.TryAs2(out var arm2))
             {
                 return From(2, 4, arm2);
             }
-            if (value.TryAs3(out var arm3))
+            if (value.Value.TryAs3(out var arm3))
             {
                 return From(3, 4, arm3);
             }
-            if (value.TryAs4(out var arm4))
+            if (value.Value.TryAs4(out var arm4))
             {
                 return From(4, 4, arm4);
             }
@@ -151,23 +151,23 @@ namespace Tsonic.CSharp.Runtime
             {
                 return From(1, 5, null);
             }
-            if (value.TryAs1(out var arm1))
+            if (value.Value.TryAs1(out var arm1))
             {
                 return From(1, 5, arm1);
             }
-            if (value.TryAs2(out var arm2))
+            if (value.Value.TryAs2(out var arm2))
             {
                 return From(2, 5, arm2);
             }
-            if (value.TryAs3(out var arm3))
+            if (value.Value.TryAs3(out var arm3))
             {
                 return From(3, 5, arm3);
             }
-            if (value.TryAs4(out var arm4))
+            if (value.Value.TryAs4(out var arm4))
             {
                 return From(4, 5, arm4);
             }
-            if (value.TryAs5(out var arm5))
+            if (value.Value.TryAs5(out var arm5))
             {
                 return From(5, 5, arm5);
             }
@@ -180,27 +180,27 @@ namespace Tsonic.CSharp.Runtime
             {
                 return From(1, 6, null);
             }
-            if (value.TryAs1(out var arm1))
+            if (value.Value.TryAs1(out var arm1))
             {
                 return From(1, 6, arm1);
             }
-            if (value.TryAs2(out var arm2))
+            if (value.Value.TryAs2(out var arm2))
             {
                 return From(2, 6, arm2);
             }
-            if (value.TryAs3(out var arm3))
+            if (value.Value.TryAs3(out var arm3))
             {
                 return From(3, 6, arm3);
             }
-            if (value.TryAs4(out var arm4))
+            if (value.Value.TryAs4(out var arm4))
             {
                 return From(4, 6, arm4);
             }
-            if (value.TryAs5(out var arm5))
+            if (value.Value.TryAs5(out var arm5))
             {
                 return From(5, 6, arm5);
             }
-            if (value.TryAs6(out var arm6))
+            if (value.Value.TryAs6(out var arm6))
             {
                 return From(6, 6, arm6);
             }
@@ -213,31 +213,31 @@ namespace Tsonic.CSharp.Runtime
             {
                 return From(1, 7, null);
             }
-            if (value.TryAs1(out var arm1))
+            if (value.Value.TryAs1(out var arm1))
             {
                 return From(1, 7, arm1);
             }
-            if (value.TryAs2(out var arm2))
+            if (value.Value.TryAs2(out var arm2))
             {
                 return From(2, 7, arm2);
             }
-            if (value.TryAs3(out var arm3))
+            if (value.Value.TryAs3(out var arm3))
             {
                 return From(3, 7, arm3);
             }
-            if (value.TryAs4(out var arm4))
+            if (value.Value.TryAs4(out var arm4))
             {
                 return From(4, 7, arm4);
             }
-            if (value.TryAs5(out var arm5))
+            if (value.Value.TryAs5(out var arm5))
             {
                 return From(5, 7, arm5);
             }
-            if (value.TryAs6(out var arm6))
+            if (value.Value.TryAs6(out var arm6))
             {
                 return From(6, 7, arm6);
             }
-            if (value.TryAs7(out var arm7))
+            if (value.Value.TryAs7(out var arm7))
             {
                 return From(7, 7, arm7);
             }
@@ -250,35 +250,35 @@ namespace Tsonic.CSharp.Runtime
             {
                 return From(1, 8, null);
             }
-            if (value.TryAs1(out var arm1))
+            if (value.Value.TryAs1(out var arm1))
             {
                 return From(1, 8, arm1);
             }
-            if (value.TryAs2(out var arm2))
+            if (value.Value.TryAs2(out var arm2))
             {
                 return From(2, 8, arm2);
             }
-            if (value.TryAs3(out var arm3))
+            if (value.Value.TryAs3(out var arm3))
             {
                 return From(3, 8, arm3);
             }
-            if (value.TryAs4(out var arm4))
+            if (value.Value.TryAs4(out var arm4))
             {
                 return From(4, 8, arm4);
             }
-            if (value.TryAs5(out var arm5))
+            if (value.Value.TryAs5(out var arm5))
             {
                 return From(5, 8, arm5);
             }
-            if (value.TryAs6(out var arm6))
+            if (value.Value.TryAs6(out var arm6))
             {
                 return From(6, 8, arm6);
             }
-            if (value.TryAs7(out var arm7))
+            if (value.Value.TryAs7(out var arm7))
             {
                 return From(7, 8, arm7);
             }
-            if (value.TryAs8(out var arm8))
+            if (value.Value.TryAs8(out var arm8))
             {
                 return From(8, 8, arm8);
             }
