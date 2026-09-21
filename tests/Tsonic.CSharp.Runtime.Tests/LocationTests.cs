@@ -7,6 +7,23 @@ namespace Tsonic.CSharp.Runtime.Tests
     public sealed class LocationTests
     {
         [Fact]
+        public void OwnedLocationsAvoidDelegateAndIdentityAllocationUntilNeeded()
+        {
+            GC.KeepAlive(Location<int>.Allocate(0));
+            var start = GC.GetAllocatedBytesForCurrentThread();
+            for (var index = 0; index < 1000; index++) GC.KeepAlive(Location<int>.Allocate(index));
+            var bytes = GC.GetAllocatedBytesForCurrentThread() - start;
+            Assert.InRange(bytes, 0, 64 * 1000);
+            var value = Location<int>.Allocate(3);
+            var alias = Location<int>.Project(value, current => current, next => next);
+            Assert.Equal(Location<int>.Hash(value), Location<int>.Hash(alias));
+            Assert.True(Location<int>.Same(value, alias));
+            alias.Store(9);
+            Assert.Equal(9, value.Load());
+            Assert.False(Location<int>.Same(value, Location<int>.Allocate(9)));
+        }
+
+        [Fact]
         public void DirectViewsRetainIdentityWithoutCallingTheBaseOrReadingBeforeWrite()
         {
             var source = Location<int>.Bind(new object(),
