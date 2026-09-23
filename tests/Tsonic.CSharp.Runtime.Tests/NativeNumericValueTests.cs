@@ -6,6 +6,33 @@ namespace Tsonic.CSharp.Runtime.Tests;
 public sealed class NativeNumericValueTests
 {
     [Fact]
+    public void ExplicitNumericProjectionsUseTheRequestedNativeCarrier()
+    {
+        const long exact = 9007199254740993;
+        Assert.Equal((ulong)exact, TsValue.CastDynamic<ulong>(TsValue.from(exact)));
+        Assert.Equal(exact, TsValue.CastDynamic<long>(TsValue.from((ulong)exact)));
+        Assert.Equal(UInt128.MaxValue, TsValue.CastDynamic<UInt128>(TsValue.from(UInt128.MaxValue)));
+        Assert.Equal(17d, TsValue.CastDynamic<double>(TsValue.from(17)));
+        Assert.Equal(17f, TsValue.CastDynamic<float>(TsValue.from(17)));
+        Assert.Equal((sbyte)17, TsValue.CastDynamic<sbyte>(TsValue.from(17)));
+        Assert.Equal((byte)17, TsValue.CastDynamic<byte>(TsValue.from(17)));
+        Assert.Equal((short)17, TsValue.CastDynamic<short>(TsValue.from(17)));
+        Assert.Equal((ushort)17, TsValue.CastDynamic<ushort>(TsValue.from(17)));
+        Assert.Equal(17, TsValue.CastDynamic<int>(TsValue.from(17L)));
+        Assert.Equal(17u, TsValue.CastDynamic<uint>(TsValue.from(17)));
+        Assert.Equal((nint)17, TsValue.CastDynamic<nint>(TsValue.from(17)));
+        Assert.Equal((nuint)17, TsValue.CastDynamic<nuint>(TsValue.from(17)));
+        Assert.Equal((Int128)exact, TsValue.CastDynamic<Int128>(TsValue.from(exact)));
+        Assert.Equal((UInt128)exact, TsValue.CastDynamic<UInt128>(TsValue.from(exact)));
+        Assert.Equal((Half)17, TsValue.CastDynamic<Half>(TsValue.from(17)));
+        Assert.Equal(17m, TsValue.CastDynamic<decimal>(TsValue.from(17)));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<int>(TsValue.from(exact)));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<ulong>(TsValue.from(-1L)));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<double>(TsValue.from("17")));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<int>(TsValue.from(true)));
+    }
+
+    [Fact]
     public void ClosedIntegersRetainNativeWidthAndPrecision()
     {
         const long exact = 9007199254740993;

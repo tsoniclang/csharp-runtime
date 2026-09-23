@@ -9,6 +9,97 @@ internal static class NativeNumbers
 
     internal static bool IsNumber(object? value) => Classify(value) != Kind.Missing;
 
+    internal static bool TryConvert<T>(object? value, out T result)
+    {
+        if (!IsNumber(value))
+        {
+            result = default!;
+            return false;
+        }
+        if (typeof(T) == typeof(sbyte))
+        {
+            result = (T)(object)Read<sbyte>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(byte))
+        {
+            result = (T)(object)Read<byte>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(short))
+        {
+            result = (T)(object)Read<short>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(ushort))
+        {
+            result = (T)(object)Read<ushort>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(int))
+        {
+            result = (T)(object)Read<int>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(uint))
+        {
+            result = (T)(object)Read<uint>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(long))
+        {
+            result = (T)(object)Read<long>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(ulong))
+        {
+            result = (T)(object)Read<ulong>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(nint))
+        {
+            result = (T)(object)Read<nint>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(nuint))
+        {
+            result = (T)(object)Read<nuint>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(Int128))
+        {
+            result = (T)(object)Read<Int128>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(UInt128))
+        {
+            result = (T)(object)Read<UInt128>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(Half))
+        {
+            result = (T)(object)Read<Half>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(float))
+        {
+            result = (T)(object)Read<float>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(double))
+        {
+            result = (T)(object)Read<double>(value);
+            return true;
+        }
+        if (typeof(T) == typeof(decimal))
+        {
+            result = (T)(object)Read<decimal>(value);
+            return true;
+        }
+        result = default!;
+        return false;
+    }
+
     internal static object Binary(object? left, string operation, object? right) => Promote(left, right) switch
     {
         Kind.Int32 => Calculate<int>(left, operation, right),

@@ -355,6 +355,8 @@ namespace Tsonic.CSharp.Runtime
             return UnwrapDynamicCarrier(value) is T;
         }
 
+        public static T CastDynamic<T>(TsValue value) => CastDynamic<T>(value._value);
+
         public static T CastDynamic<T>(object? value)
         {
             if (TryCastDynamic<T>(value, out var typed))
@@ -381,6 +383,10 @@ namespace Tsonic.CSharp.Runtime
             if (unwrapped is T typed)
             {
                 result = typed;
+                return true;
+            }
+            if (NativeNumbers.TryConvert(unwrapped, out result))
+            {
                 return true;
             }
             if ((unwrapped is null or Undefined) && default(T) is null)
