@@ -551,12 +551,7 @@ namespace Tsonic.CSharp.Runtime
 
         private static double parseNumber(string text)
         {
-            var trimmed = text.Trim();
-            if (trimmed.Length == 0)
-            {
-                return 0;
-            }
-            return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
+            return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
                 ? number
                 : double.NaN;
         }
