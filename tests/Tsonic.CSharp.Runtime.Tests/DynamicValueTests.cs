@@ -22,7 +22,7 @@ namespace Tsonic.CSharp.Runtime.Tests
 
             Assert.Equal("Ada", value.ReadDynamicSlot("name").unwrap());
             Assert.Null(value.ReadDynamicSlot("empty").unwrap());
-            Assert.Same(Undefined.value, value.ReadDynamicSlot("missing").unwrap());
+            Assert.Same(TsValue.undefined().unwrap(), value.ReadDynamicSlot("missing").unwrap());
 
             value.WriteDynamicElement("name", "Grace");
             Assert.Equal("Grace", value.ReadDynamicSlot("name").unwrap());
@@ -36,12 +36,12 @@ namespace Tsonic.CSharp.Runtime.Tests
             value.WriteDynamicElement(2, "third");
 
             Assert.Equal(3, value.ReadDynamicSlot("length").unwrap());
-            Assert.Same(Undefined.value, value.ReadDynamicElement(0).unwrap());
+            Assert.Same(TsValue.undefined().unwrap(), value.ReadDynamicElement(0).unwrap());
             Assert.Equal("third", value.ReadDynamicElement(2).unwrap());
 
             value.WriteDynamicSlot("length", 1);
             Assert.Equal(1, value.ReadDynamicSlot("length").unwrap());
-            Assert.Same(Undefined.value, value.ReadDynamicElement(2).unwrap());
+            Assert.Same(TsValue.undefined().unwrap(), value.ReadDynamicElement(2).unwrap());
         }
 
         [Fact]
@@ -99,7 +99,7 @@ namespace Tsonic.CSharp.Runtime.Tests
 
             Assert.Equal(
                 "fallback",
-                TsValue.ApplyDynamicLogical(Undefined.value, "??", () =>
+                TsValue.ApplyDynamicLogical(TsValue.undefined().unwrap(), "??", () =>
                 {
                     evaluations++;
                     return "fallback";
@@ -112,8 +112,8 @@ namespace Tsonic.CSharp.Runtime.Tests
                     return "unused";
                 }).unwrap());
             Assert.Equal(1, evaluations);
-            Assert.True(TsValue.ApplyDynamicBinaryBoolean(null, "==", Undefined.value));
-            Assert.False(TsValue.ApplyDynamicBinaryBoolean(null, "===", Undefined.value));
+            Assert.True(TsValue.ApplyDynamicBinaryBoolean(null, "==", TsValue.undefined().unwrap()));
+            Assert.True(TsValue.ApplyDynamicBinaryBoolean(null, "===", TsValue.undefined().unwrap()));
         }
 
         [Fact]
@@ -134,7 +134,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             value.WriteDynamicSlot("answer", 42);
 
             Assert.Equal(42, value.ReadDynamicSlot("answer").unwrap());
-            Assert.Same(Undefined.value, value.ReadDynamicSlot("missing").unwrap());
+            Assert.Same(TsValue.undefined().unwrap(), value.ReadDynamicSlot("missing").unwrap());
         }
 
         [Fact]
@@ -146,7 +146,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             value.WriteDynamicElement(1, "second");
 
             Assert.Equal(2, value.ReadDynamicSlot("length").unwrap());
-            Assert.Same(Undefined.value, value.ReadDynamicElement(0).unwrap());
+            Assert.Same(TsValue.undefined().unwrap(), value.ReadDynamicElement(0).unwrap());
             Assert.Equal("second", value.ReadDynamicElement(1).unwrap());
             value.WriteDynamicSlot("length", 1);
             Assert.Equal(1, target.Length);

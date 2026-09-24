@@ -102,7 +102,7 @@ namespace Tsonic.CSharp.Runtime
 
         public static TsValue undefined()
         {
-            return new TsValue(Undefined.value);
+            return new TsValue(null);
         }
 
         public static TsValue CreateDynamicObject(params object?[] keyValues)
@@ -131,14 +131,13 @@ namespace Tsonic.CSharp.Runtime
 
         public bool isUndefined()
         {
-            return unwrapForOperation(_value) is Undefined;
+            return unwrapForOperation(_value) is null;
         }
 
         public TsValue ReadDynamicSlot(string key)
         {
             return unwrapForOperation(_value) switch
             {
-                Undefined => throw nullishReadError(key),
                 null => throw nullishReadError(key),
                 TsObject target => target.ReadDynamicSlot(key),
                 TsArray target => target.ReadDynamicSlot(key),
@@ -169,8 +168,6 @@ namespace Tsonic.CSharp.Runtime
             var stored = from(value);
             switch (unwrapForOperation(_value))
             {
-                case Undefined:
-                    throw nullishWriteError(key);
                 case null:
                     throw nullishWriteError(key);
                 case TsObject target:
@@ -274,10 +271,7 @@ namespace Tsonic.CSharp.Runtime
             return op switch
             {
                 "+" => plus(left, right),
-                "-" => from(toNumber(left) - toNumber(right)),
-                "*" => from(toNumber(left) * toNumber(right)),
-                "/" => from(toNumber(left) / toNumber(right)),
-                "%" => from(toNumber(left) % toNumber(right)),
+                "-" or "*" or "/" or "%" => from(NativeNumbers.Binary(unwrapForOperation(left), op, unwrapForOperation(right))),
                 _ => throw unsupportedOperator(op)
             };
         }
@@ -313,9 +307,7 @@ namespace Tsonic.CSharp.Runtime
         {
             return op switch
             {
-                "+" => from(toNumber(operand)),
-                "-" => from(-toNumber(operand)),
-                "~" => from(~(int)toNumber(operand)),
+                "+" or "-" or "~" => from(NativeNumbers.Unary(unwrapForOperation(operand), op)),
                 _ => throw unsupportedOperator(op)
             };
         }
@@ -340,11 +332,10 @@ namespace Tsonic.CSharp.Runtime
             var unwrapped = unwrapForOperation(operand);
             return unwrapped switch
             {
-                Undefined => "undefined",
                 null => "object",
                 bool => "boolean",
                 string => "string",
-                double or float or decimal or int or long or uint or ulong or byte or sbyte or short or ushort => "number",
+                double or float or decimal or Half or int or long or uint or ulong or byte or sbyte or short or ushort or nint or nuint or Int128 or UInt128 => "number",
                 TsFunction => "function",
                 _ => "object"
             };
@@ -360,6 +351,8 @@ namespace Tsonic.CSharp.Runtime
             return UnwrapDynamicCarrier(value) is T;
         }
 
+        public static T CastDynamic<T>(TsValue value) => CastDynamic<T>(value._value);
+
         public static T CastDynamic<T>(object? value)
         {
             if (TryCastDynamic<T>(value, out var typed))
@@ -367,7 +360,7 @@ namespace Tsonic.CSharp.Runtime
                 return typed;
             }
             var unwrapped = unwrapForOperation(value);
-            if (unwrapped is null or Undefined)
+            if (unwrapped is null)
             {
                 throw new TypeError("Cannot cast null or undefined to the requested closed value carrier.");
             }
@@ -388,7 +381,11 @@ namespace Tsonic.CSharp.Runtime
                 result = typed;
                 return true;
             }
-            if ((unwrapped is null or Undefined) && default(T) is null)
+            if (NativeNumbers.TryConvert(unwrapped, out result))
+            {
+                return true;
+            }
+            if ((unwrapped is null) && default(T) is null)
             {
                 result = default!;
                 return true;
@@ -415,6 +412,7 @@ namespace Tsonic.CSharp.Runtime
                 sbyte => true,
                 short => true,
                 ushort => true,
+                Half or nint or nuint or Int128 or UInt128 => true,
                 TsObject => true,
                 TsArray => true,
                 TsUnion => true,
@@ -422,7 +420,6 @@ namespace Tsonic.CSharp.Runtime
                 IDynamicObject => true,
                 Error => true,
                 Exception => true,
-                Undefined => true,
                 IDictionary<string, object?> => true,
                 IReadOnlyDictionary<string, object?> => true,
                 ITsClosedValueCarrier => true,
@@ -436,7 +433,7 @@ namespace Tsonic.CSharp.Runtime
             var rightValue = unwrapForOperation(right);
             return leftValue is string || rightValue is string
                 ? from(toJsString(leftValue) + toJsString(rightValue))
-                : from(toNumber(leftValue) + toNumber(rightValue));
+                : from(NativeNumbers.Binary(leftValue, "+", rightValue));
         }
 
         private static bool tryCompare(object? left, object? right, out int comparison)
@@ -448,15 +445,9 @@ namespace Tsonic.CSharp.Runtime
                 comparison = string.CompareOrdinal(leftText, rightText);
                 return true;
             }
-            var leftNumber = toNumber(leftValue);
-            var rightNumber = toNumber(rightValue);
-            if (double.IsNaN(leftNumber) || double.IsNaN(rightNumber))
-            {
-                comparison = 0;
-                return false;
-            }
-            comparison = leftNumber.CompareTo(rightNumber);
-            return true;
+            var result = NativeNumbers.Compare(leftValue, rightValue);
+            comparison = result.GetValueOrDefault();
+            return result.HasValue;
         }
 
         private static bool looseEquals(object? left, object? right)
@@ -471,12 +462,6 @@ namespace Tsonic.CSharp.Runtime
             {
                 return false;
             }
-            if (leftValue is bool || rightValue is bool || isNumeric(leftValue) || isNumeric(rightValue))
-            {
-                var leftNumber = toNumber(leftValue);
-                var rightNumber = toNumber(rightValue);
-                return !double.IsNaN(leftNumber) && !double.IsNaN(rightNumber) && leftNumber == rightNumber;
-            }
             return strictEquals(leftValue, rightValue);
         }
 
@@ -484,6 +469,8 @@ namespace Tsonic.CSharp.Runtime
         {
             var leftValue = unwrapForOperation(left);
             var rightValue = unwrapForOperation(right);
+            if (NativeNumbers.IsNumber(leftValue) && NativeNumbers.IsNumber(rightValue))
+                return NativeNumbers.Compare(leftValue, rightValue) == 0;
             if (ReferenceEquals(leftValue, rightValue))
             {
                 return true;
@@ -491,12 +478,6 @@ namespace Tsonic.CSharp.Runtime
             if (isNullish(leftValue) || isNullish(rightValue))
             {
                 return false;
-            }
-            if (isNumeric(leftValue) && isNumeric(rightValue))
-            {
-                var leftNumber = toNumber(leftValue);
-                var rightNumber = toNumber(rightValue);
-                return !double.IsNaN(leftNumber) && !double.IsNaN(rightNumber) && leftNumber == rightNumber;
             }
             return leftValue!.GetType() == rightValue!.GetType() && Equals(leftValue, rightValue);
         }
@@ -507,7 +488,6 @@ namespace Tsonic.CSharp.Runtime
             return unwrapped switch
             {
                 null => false,
-                Undefined => false,
                 bool boolean => boolean,
                 string text => text.Length > 0,
                 double number => number != 0 && !double.IsNaN(number),
@@ -521,44 +501,13 @@ namespace Tsonic.CSharp.Runtime
                 sbyte number => number != 0,
                 short number => number != 0,
                 ushort number => number != 0,
+                Half number => number != (Half)0 && !Half.IsNaN(number),
+                nint number => number != 0,
+                nuint number => number != 0,
+                Int128 number => number != 0,
+                UInt128 number => number != 0,
                 _ => true
             };
-        }
-
-        private static double toNumber(object? value)
-        {
-            var unwrapped = unwrapForOperation(value);
-            return unwrapped switch
-            {
-                null => 0,
-                Undefined => double.NaN,
-                bool boolean => boolean ? 1 : 0,
-                string text => parseNumber(text),
-                double number => number,
-                float number => number,
-                decimal number => (double)number,
-                int number => number,
-                long number => number,
-                uint number => number,
-                ulong number => number,
-                byte number => number,
-                sbyte number => number,
-                short number => number,
-                ushort number => number,
-                _ => double.NaN
-            };
-        }
-
-        private static double parseNumber(string text)
-        {
-            var trimmed = text.Trim();
-            if (trimmed.Length == 0)
-            {
-                return 0;
-            }
-            return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
-                ? number
-                : double.NaN;
         }
 
         private static string toJsString(object? value)
@@ -567,7 +516,6 @@ namespace Tsonic.CSharp.Runtime
             return unwrapped switch
             {
                 null => "null",
-                Undefined => "undefined",
                 bool boolean => boolean ? "true" : "false",
                 string text => text,
                 double number => number.ToString(CultureInfo.InvariantCulture),
@@ -581,6 +529,11 @@ namespace Tsonic.CSharp.Runtime
                 sbyte number => number.ToString(CultureInfo.InvariantCulture),
                 short number => number.ToString(CultureInfo.InvariantCulture),
                 ushort number => number.ToString(CultureInfo.InvariantCulture),
+                Half number => number.ToString(CultureInfo.InvariantCulture),
+                nint number => number.ToString(CultureInfo.InvariantCulture),
+                nuint number => number.ToString(CultureInfo.InvariantCulture),
+                Int128 number => number.ToString(CultureInfo.InvariantCulture),
+                UInt128 number => number.ToString(CultureInfo.InvariantCulture),
                 _ => "[object Object]"
             };
         }
@@ -610,13 +563,7 @@ namespace Tsonic.CSharp.Runtime
         private static bool isNullish(object? value)
         {
             var unwrapped = unwrapForOperation(value);
-            return unwrapped is null or Undefined;
-        }
-
-        private static bool isNumeric(object? value)
-        {
-            var unwrapped = unwrapForOperation(value);
-            return unwrapped is double or float or decimal or int or long or uint or ulong or byte or sbyte or short or ushort;
+            return unwrapped is null;
         }
 
         internal static object? UnwrapDynamicCarrier(object? value)
@@ -637,7 +584,7 @@ namespace Tsonic.CSharp.Runtime
 
         private static NotSupportedException unsupportedOperator(string op)
         {
-            return new NotSupportedException($"TsValue does not support ECMAScript operator '{op}' in the closed TypeScript runtime.");
+            return new NotSupportedException($"TsValue has no closed native operation for '{op}'.");
         }
 
         internal static string propertyKey(object? key)
@@ -645,7 +592,6 @@ namespace Tsonic.CSharp.Runtime
             key = unwrapForOperation(key);
             return key switch
             {
-                Undefined => "undefined",
                 null => "null",
                 string value => value,
                 bool value => value ? "true" : "false",

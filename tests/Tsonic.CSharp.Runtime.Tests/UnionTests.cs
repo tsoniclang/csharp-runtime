@@ -138,18 +138,16 @@ namespace Tsonic.CSharp.Runtime.Tests
         }
 
         [Fact]
-        public void Union3_PreservesNeutralNullAndUndefinedArms()
+        public void NativeNullableUnionRetainsPresentValuesAndOneAbsence()
         {
-            Union<int, string, Undefined> undefinedUnion = Undefined.value;
-            Union<int, string, Null> nullUnion = Null.value;
-
-            Assert.True(undefinedUnion.Is3());
-            Assert.Same(Undefined.value, undefinedUnion.As3());
-            Assert.Equal("undefined", undefinedUnion.ToString());
-
-            Assert.True(nullUnion.Is3());
-            Assert.Same(Null.value, nullUnion.As3());
-            Assert.Equal("null", nullUnion.ToString());
+            Union<int, string>? absent = null;
+            Union<int, string>? zero = Union<int, string>.From1(0);
+            Union<int, string>? empty = Union<int, string>.From2("");
+            Assert.Null(absent);
+            Assert.True(zero!.Value.Is1());
+            Assert.Equal(0, zero.Value.As1());
+            Assert.True(empty!.Value.Is2());
+            Assert.Equal("", empty.Value.As2());
         }
 
         [Fact]
