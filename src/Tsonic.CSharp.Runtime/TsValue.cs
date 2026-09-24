@@ -102,7 +102,7 @@ namespace Tsonic.CSharp.Runtime
 
         public static TsValue undefined()
         {
-            return new TsValue(Undefined.value);
+            return new TsValue(null);
         }
 
         public static TsValue CreateDynamicObject(params object?[] keyValues)
@@ -131,14 +131,13 @@ namespace Tsonic.CSharp.Runtime
 
         public bool isUndefined()
         {
-            return unwrapForOperation(_value) is Undefined;
+            return unwrapForOperation(_value) is null;
         }
 
         public TsValue ReadDynamicSlot(string key)
         {
             return unwrapForOperation(_value) switch
             {
-                Undefined => throw nullishReadError(key),
                 null => throw nullishReadError(key),
                 TsObject target => target.ReadDynamicSlot(key),
                 TsArray target => target.ReadDynamicSlot(key),
@@ -169,8 +168,6 @@ namespace Tsonic.CSharp.Runtime
             var stored = from(value);
             switch (unwrapForOperation(_value))
             {
-                case Undefined:
-                    throw nullishWriteError(key);
                 case null:
                     throw nullishWriteError(key);
                 case TsObject target:
@@ -335,7 +332,6 @@ namespace Tsonic.CSharp.Runtime
             var unwrapped = unwrapForOperation(operand);
             return unwrapped switch
             {
-                Undefined => "undefined",
                 null => "object",
                 bool => "boolean",
                 string => "string",
@@ -364,7 +360,7 @@ namespace Tsonic.CSharp.Runtime
                 return typed;
             }
             var unwrapped = unwrapForOperation(value);
-            if (unwrapped is null or Undefined)
+            if (unwrapped is null)
             {
                 throw new TypeError("Cannot cast null or undefined to the requested closed value carrier.");
             }
@@ -389,7 +385,7 @@ namespace Tsonic.CSharp.Runtime
             {
                 return true;
             }
-            if ((unwrapped is null or Undefined) && default(T) is null)
+            if ((unwrapped is null) && default(T) is null)
             {
                 result = default!;
                 return true;
@@ -424,7 +420,6 @@ namespace Tsonic.CSharp.Runtime
                 IDynamicObject => true,
                 Error => true,
                 Exception => true,
-                Undefined => true,
                 IDictionary<string, object?> => true,
                 IReadOnlyDictionary<string, object?> => true,
                 ITsClosedValueCarrier => true,
@@ -493,7 +488,6 @@ namespace Tsonic.CSharp.Runtime
             return unwrapped switch
             {
                 null => false,
-                Undefined => false,
                 bool boolean => boolean,
                 string text => text.Length > 0,
                 double number => number != 0 && !double.IsNaN(number),
@@ -522,7 +516,6 @@ namespace Tsonic.CSharp.Runtime
             return unwrapped switch
             {
                 null => "null",
-                Undefined => "undefined",
                 bool boolean => boolean ? "true" : "false",
                 string text => text,
                 double number => number.ToString(CultureInfo.InvariantCulture),
@@ -570,7 +563,7 @@ namespace Tsonic.CSharp.Runtime
         private static bool isNullish(object? value)
         {
             var unwrapped = unwrapForOperation(value);
-            return unwrapped is null or Undefined;
+            return unwrapped is null;
         }
 
         internal static object? UnwrapDynamicCarrier(object? value)
@@ -599,7 +592,6 @@ namespace Tsonic.CSharp.Runtime
             key = unwrapForOperation(key);
             return key switch
             {
-                Undefined => "undefined",
                 null => "null",
                 string value => value,
                 bool value => value ? "true" : "false",
