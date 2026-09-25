@@ -8,6 +8,9 @@
     "url": "https://github.com/tsoniclang/csharp-runtime.git"
   },
   "type": "module",
+  "scripts": {
+    "test": "bash \"${TSONIC_ROOT:-../tsonic}/test/scripts/run-all.sh\" --scope csharp-runtime"
+  },
   "files": [
     "Directory.Build.props",
     "src",
