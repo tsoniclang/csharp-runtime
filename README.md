@@ -15,3 +15,9 @@ The npm package contains C# source, its project, and build settings. The public
 `@tsonic/csharp-runtime/runtime.csproj` export identifies the native project.
 The C# target references it for the application's selected framework. Build
 outputs stay in the application's `.tsonic/cache`, not the installed package.
+
+Indexed records use native `Dictionary<TKey, TValue>` storage. Record helpers
+preserve shared reference identity and native integer widths. Optional reads
+return the native absence value for a missing key; required reads retain native
+dictionary failure. Spreads copy directly into the destination dictionary in
+source evaluation order, without an intermediate entry collection.
