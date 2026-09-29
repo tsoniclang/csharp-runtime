@@ -335,7 +335,8 @@ namespace Tsonic.CSharp.Runtime
                 null => "object",
                 bool => "boolean",
                 string => "string",
-                double or float or decimal or Half or int or long or uint or ulong or byte or sbyte or short or ushort or nint or nuint or Int128 or UInt128 => "number",
+                long or ulong or Int128 or UInt128 => "bigint",
+                double or float or decimal or Half or int or uint or byte or sbyte or short or ushort or nint or nuint => "number",
                 TsFunction => "function",
                 _ => "object"
             };

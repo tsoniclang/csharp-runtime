@@ -82,6 +82,31 @@ namespace Tsonic.CSharp.Runtime.Tests
         }
 
         [Fact]
+        public void NativePrimitiveCategories_PreserveTheBoxedCarrier()
+        {
+            object[] numbers = {
+                sbyte.MinValue, byte.MaxValue, short.MinValue, ushort.MaxValue,
+                int.MinValue, uint.MaxValue, nint.MinValue, nuint.MaxValue, 0.1f, 0.1d
+            };
+            object[] bigints = { long.MinValue, ulong.MaxValue, Int128.MinValue, UInt128.MaxValue };
+            foreach (var original in numbers)
+            {
+                var value = TsValue.from(original);
+                Assert.Same(original, value.unwrap());
+                Assert.Equal("number", TsValue.ApplyDynamicTypeof(value));
+            }
+            foreach (var original in bigints)
+            {
+                var value = TsValue.from(original);
+                Assert.Same(original, value.unwrap());
+                Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(value));
+            }
+            Assert.Equal("boolean", TsValue.ApplyDynamicTypeof(TsValue.from(true)));
+            Assert.Equal("string", TsValue.ApplyDynamicTypeof(TsValue.from("native")));
+            Assert.Equal("object", TsValue.ApplyDynamicTypeof(TsValue.from(null)));
+        }
+
+        [Fact]
         public void ThrownValueCarrier_PreservesNativeAndNonNativeValues()
         {
             var native = new InvalidOperationException("native");
