@@ -8,6 +8,38 @@ namespace Tsonic.CSharp.Runtime.Tests
     public class DynamicValueTests
     {
         [Fact]
+        public void ArrayPredicate_InspectsClosedPayloadWithoutAllocationOrCopy()
+        {
+            var array = new TsArray();
+            var direct = TsValue.from(array);
+            var nested = TsValue.from(TsUnion.From(1, 2, TsUnion.From(1, 2, array)));
+            var dynamic = TsValue.from(new TestDynamicArray());
+            var absent = TsValue.undefined();
+            var text = TsValue.from("text");
+            var record = TsValue.CreateDynamicObject("length", 3);
+            for (var index = 0; index < 1000; index++)
+            {
+                Assert.True(direct.IsArray());
+                Assert.True(nested.IsArray());
+                Assert.True(dynamic.IsArray());
+            }
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var matches = 0;
+            for (var index = 0; index < 1000; index++)
+            {
+                if (direct.IsArray()) matches++;
+                if (nested.IsArray()) matches++;
+                if (dynamic.IsArray()) matches++;
+                if (absent.IsArray() || text.IsArray() || record.IsArray()) matches++;
+            }
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.Equal(3000, matches);
+            Assert.Equal(0, allocated);
+            Assert.Same(array, direct.unwrap());
+            Assert.Throws<NotSupportedException>(() => TsValue.from(new int[] { 1, 2 }));
+        }
+
+        [Fact]
         public void CoreRuntime_HasNoJsSurfaceAssemblyDependency()
         {
             Assert.DoesNotContain(

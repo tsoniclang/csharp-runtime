@@ -134,6 +134,11 @@ namespace Tsonic.CSharp.Runtime
             return unwrapForOperation(_value) is null;
         }
 
+        public bool IsArray()
+        {
+            return unwrapForOperation(_value) is TsArray or IDynamicArray;
+        }
+
         public TsValue ReadDynamicSlot(string key)
         {
             return unwrapForOperation(_value) switch
@@ -580,7 +585,11 @@ namespace Tsonic.CSharp.Runtime
         private static object? unwrapForOperation(object? value)
         {
             var carrier = UnwrapDynamicCarrier(value);
-            return carrier is TsUnion union ? unwrapForOperation(union.value()) : carrier;
+            while (carrier is TsUnion union)
+            {
+                carrier = union.unwrap();
+            }
+            return carrier;
         }
 
         private static NotSupportedException unsupportedOperator(string op)
