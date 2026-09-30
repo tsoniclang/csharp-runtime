@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Tsonic.CSharp.Runtime;
 using Xunit;
 
@@ -255,6 +256,44 @@ namespace Tsonic.CSharp.Runtime.Tests
                 Location<int>.CreateArrayElement(values, 1U));
             Assert.Throws<IndexOutOfRangeException>(() =>
                 Location<int>.CreateArrayElement(values, ulong.MaxValue));
+        }
+
+        [Fact]
+        public void IndexedLocationsRetainNativeKeysIdentityAndLiveStorage()
+        {
+            var values = new Dictionary<double, long?> { [0] = 9007199254740993L, [1] = 2 };
+            static Location<long?> Select(Dictionary<double, long?> owner, double index) =>
+                Location<long?>.CreateIndexedElement(owner, index,
+                    static (state, key) => state[key], static (state, key, value) => state[key] = value);
+            var location = Select(values, 0);
+            var alias = Select(values, -0.0);
+            Assert.True(Location<long?>.Same(location, alias));
+            Assert.Equal(Location<long?>.Hash(location), Location<long?>.Hash(alias));
+            Assert.False(Location<long?>.Same(location, Select(values, 1)));
+            Assert.False(Location<long?>.Same(location, Select(new(values), 0)));
+            Assert.Equal(9007199254740993L, location.Load());
+            location.Store(null);
+            Assert.Null(values[0]);
+            Assert.Null(alias.Load());
+            values[0] = 9007199254740995L;
+            Assert.Equal(9007199254740995L, alias.Load());
+            var unavailable = Select(values, 4);
+            Assert.Throws<KeyNotFoundException>(() => unavailable.Load());
+            unavailable.Store(7);
+            Assert.Equal(7L, values[4]);
+        }
+
+        [Fact]
+        public void IndexedLocationReadsAndWritesDoNotBoxOrAllocate()
+        {
+            var values = new long[] { 1 };
+            var location = Location<long>.CreateIndexedElement(values, 0,
+                static (state, index) => state[index], static (state, index, value) => state[index] = value);
+            location.Store(location.Load());
+            var start = GC.GetAllocatedBytesForCurrentThread();
+            for (var index = 0; index < 1000; index++) location.Store(location.Load() + 1);
+            Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - start);
+            Assert.Equal(1001L, values[0]);
         }
 
         [Fact]

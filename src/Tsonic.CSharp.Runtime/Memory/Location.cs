@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace Tsonic.CSharp.Runtime
@@ -130,6 +131,23 @@ namespace Tsonic.CSharp.Runtime
         internal override int SegmentHash() => _index.GetHashCode();
     }
 
+    internal sealed class IndexedLocationIdentity<TIndex> : LocationIdentity
+    {
+        private readonly TIndex _index;
+
+        internal IndexedLocationIdentity(object owner, TIndex index)
+        {
+            Parent = new ReferenceLocationIdentity(owner);
+            _index = index;
+        }
+
+        internal override LocationIdentity Parent { get; }
+        internal override bool SegmentEquals(LocationIdentity other) =>
+            other is IndexedLocationIdentity<TIndex> indexed &&
+            EqualityComparer<TIndex>.Default.Equals(_index, indexed._index);
+        internal override int SegmentHash() => EqualityComparer<TIndex>.Default.GetHashCode(_index!);
+    }
+
     public abstract class Location<T>
     {
         internal RawPointer? RawBacking { get; private init; }
@@ -253,6 +271,19 @@ namespace Tsonic.CSharp.Runtime
         public static Location<T> CreateArrayElement(T[] storage, int index) =>
             CreateArrayElementCore(storage, index);
 
+        public static Location<T> CreateIndexedElement<TState, TIndex>(
+            TState state,
+            TIndex index,
+            Func<TState, TIndex, T> read,
+            Action<TState, TIndex, T> write)
+            where TState : class
+        {
+            ArgumentNullException.ThrowIfNull(state);
+            ArgumentNullException.ThrowIfNull(read);
+            ArgumentNullException.ThrowIfNull(write);
+            return new IndexedLocation<TState, TIndex>(state, index, read, write);
+        }
+
         public static Location<T> CreateArrayElement(T[] storage, uint index) =>
             CreateArrayElementCore(storage, index);
 
@@ -303,6 +334,27 @@ namespace Tsonic.CSharp.Runtime
                     index),
                 () => storage[exactIndex],
                 value => storage[exactIndex] = value);
+        }
+
+        private sealed class IndexedLocation<TState, TIndex> : Location<T> where TState : class
+        {
+            private readonly TState _state;
+            private readonly TIndex _index;
+            private readonly Func<TState, TIndex, T> _read;
+            private readonly Action<TState, TIndex, T> _write;
+
+            internal IndexedLocation(TState state, TIndex index,
+                Func<TState, TIndex, T> read, Action<TState, TIndex, T> write)
+                : base(new IndexedLocationIdentity<TIndex>(state, index))
+            {
+                _state = state;
+                _index = index;
+                _read = read;
+                _write = write;
+            }
+
+            public override T Load() => _read(_state, _index);
+            public override void Store(T value) => _write(_state, _index, value);
         }
 
         private sealed class OwnedLocation : Location<T>
