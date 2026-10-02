@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace Tsonic.CSharp.Runtime
 {
@@ -292,6 +293,11 @@ namespace Tsonic.CSharp.Runtime
             };
         }
 
+        public static bool ApplyDynamicBinaryBoolean(TsValue left, string op, TsValue right)
+        {
+            return ApplyDynamicBinaryBoolean(left._value, op, right._value);
+        }
+
         public static bool ApplyDynamicBinaryBoolean(object? left, string op, object? right)
         {
             return op switch
@@ -423,6 +429,7 @@ namespace Tsonic.CSharp.Runtime
                 TsArray => true,
                 TsUnion => true,
                 TsFunction => true,
+                Task => true,
                 IDynamicObject => true,
                 Error => true,
                 Exception => true,

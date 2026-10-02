@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Tsonic.CSharp.Runtime;
 using Xunit;
 
@@ -7,6 +8,55 @@ namespace Tsonic.CSharp.Runtime.Tests
 {
     public class DynamicValueTests
     {
+        [Fact]
+        public async Task NativeTasks_RetainIdentityCompletionAndExactOutput()
+        {
+            var source = new TaskCompletionSource<ulong>();
+            var task = source.Task;
+            var value = TsValue.from(task);
+            Assert.Same(task, value.unwrap());
+            Assert.Same(task, TsValue.CastDynamic<Task<ulong>>(value));
+            Assert.False(task.IsCompleted);
+            Assert.Equal("object", TsValue.ApplyDynamicTypeof(value));
+            Assert.True(TsValue.ApplyDynamicBinaryBoolean(value, "===", TsValue.from(task)));
+            Assert.False(TsValue.ApplyDynamicBinaryBoolean(value, "===", TsValue.from(Task.CompletedTask)));
+            Assert.Throws<NotSupportedException>(() => TsValue.from(new OpenObject()));
+            source.SetResult(18_446_744_073_709_551_615UL);
+            Assert.Equal(ulong.MaxValue, await TsValue.CastDynamic<Task<ulong>>(value));
+        }
+
+        [Fact]
+        public async Task NativeTaskAdmission_DoesNotAwaitOrReplaceFailures()
+        {
+            var error = new InvalidOperationException("native completion");
+            var task = Task.FromException<int>(error);
+            var value = TsValue.from(task);
+            Assert.Same(task, value.unwrap());
+            var observed = await Assert.ThrowsAsync<InvalidOperationException>(() => TsValue.CastDynamic<Task<int>>(value));
+            Assert.Same(error, observed);
+            var canceled = Task.FromCanceled<int>(new System.Threading.CancellationToken(true));
+            Assert.Same(canceled, TsValue.from(canceled).unwrap());
+            Assert.True(canceled.IsCanceled);
+        }
+
+        [Fact]
+        public void NativeTaskAdmission_HasNoWrapperOrPerReadAllocation()
+        {
+            var task = Task.CompletedTask;
+            for (var index = 0; index < 1000; index++) TsValue.from(task);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var matches = 0;
+            for (var index = 0; index < 1000; index++)
+            {
+                var left = TsValue.from(task);
+                var right = TsValue.from(task);
+                if (TsValue.ApplyDynamicBinaryBoolean(left, "===", right)) matches++;
+            }
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.Equal(1000, matches);
+            Assert.Equal(0, allocated);
+        }
+
         [Fact]
         public void ArrayPredicate_InspectsClosedPayloadWithoutAllocationOrCopy()
         {
