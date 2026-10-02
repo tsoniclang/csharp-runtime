@@ -98,6 +98,43 @@ namespace Tsonic.CSharp.Runtime.Tests
         }
 
         [Fact]
+        public void ArrayLength_UsesTheOriginalNativeBackingWithoutBoxingElementsOrTheResult()
+        {
+            var array = new TsArray();
+            array.WriteDynamicSlot("0", "first");
+            var direct = TsValue.from(array);
+            var nested = TsValue.from(TsUnion.From(1, 2, array));
+            var dynamicArray = new TestDynamicArray();
+            dynamicArray.TrySetAt(0, "first");
+            var dynamicValue = TsValue.from(dynamicArray);
+            for (var index = 0; index < 1000; index++)
+            {
+                Assert.Equal(1, direct.ArrayLength);
+                Assert.Equal(1, nested.ArrayLength);
+                Assert.Equal(1, dynamicValue.ArrayLength);
+            }
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var total = 0;
+            for (var index = 0; index < 1000; index++)
+            {
+                total += direct.ArrayLength + nested.ArrayLength + dynamicValue.ArrayLength;
+            }
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.Equal(3000, total);
+            Assert.Equal(0, allocated);
+            array.WriteDynamicSlot("1", "second");
+            dynamicArray.TrySetAt(1, "second");
+            Assert.Equal(2, direct.ArrayLength);
+            Assert.Equal(2, nested.ArrayLength);
+            Assert.Equal(2, dynamicValue.ArrayLength);
+            foreach (var value in new[] { TsValue.undefined(), TsValue.from("text"),
+                TsValue.CreateDynamicObject("length", 3), TsValue.from(Task.CompletedTask) })
+            {
+                Assert.Throws<TypeError>(() => value.ArrayLength);
+            }
+        }
+
+        [Fact]
         public void ObjectCarrier_PreservesPresentAndMissingValues()
         {
             var value = TsValue.CreateDynamicObject("name", "Ada", "empty", null);
@@ -149,10 +186,12 @@ namespace Tsonic.CSharp.Runtime.Tests
         {
             var value = TsValue.from(Union<int, string>.From2("ready"));
 
-            var union = Assert.IsType<TsUnion>(value.unwrap());
-            Assert.Equal(2, union.ArmIndex);
-            Assert.Equal(2, union.ArmCount);
-            Assert.Equal("ready", union.asArm(2).unwrap());
+            var union = Assert.IsType<Union<int, string>>(value.unwrap());
+            Assert.True(union.Is2());
+            Assert.False(union.Is1());
+            Assert.Equal("ready", union.As2());
+            Assert.Equal(union, TsValue.CastDynamic<Union<int, string>>(value));
+            Assert.Equal("ready", TsValue.UnwrapClosedValue(value));
             Assert.Equal("string", TsValue.ApplyDynamicTypeof(value));
         }
 

@@ -24,6 +24,11 @@ namespace Tsonic.CSharp.Runtime
                 return typed;
             }
 
+            if (value is IClosedUnionValue { IsInitialized: false })
+            {
+                throw new InvalidOperationException("Union is not initialized.");
+            }
+
             if (!isSupported(value))
             {
                 throw new NotSupportedException("TsValue requires a closed TypeScript runtime carrier.");
@@ -33,72 +38,72 @@ namespace Tsonic.CSharp.Runtime
 
         public static TsValue from<T1, T2>(Union<T1, T2> value)
         {
-            return from(TsUnion.From<T1, T2>(value));
+            return from((object)value);
         }
 
         public static TsValue from<T1, T2>(Union<T1, T2>? value)
         {
-            return value is null ? from(null) : from(TsUnion.From(value));
+            return value.HasValue ? from(value.Value) : undefined();
         }
 
         public static TsValue from<T1, T2, T3>(Union<T1, T2, T3> value)
         {
-            return from(TsUnion.From<T1, T2, T3>(value));
+            return from((object)value);
         }
 
         public static TsValue from<T1, T2, T3>(Union<T1, T2, T3>? value)
         {
-            return value is null ? from(null) : from(TsUnion.From(value));
+            return value.HasValue ? from(value.Value) : undefined();
         }
 
         public static TsValue from<T1, T2, T3, T4>(Union<T1, T2, T3, T4> value)
         {
-            return from(TsUnion.From<T1, T2, T3, T4>(value));
+            return from((object)value);
         }
 
         public static TsValue from<T1, T2, T3, T4>(Union<T1, T2, T3, T4>? value)
         {
-            return value is null ? from(null) : from(TsUnion.From(value));
+            return value.HasValue ? from(value.Value) : undefined();
         }
 
         public static TsValue from<T1, T2, T3, T4, T5>(Union<T1, T2, T3, T4, T5> value)
         {
-            return from(TsUnion.From<T1, T2, T3, T4, T5>(value));
+            return from((object)value);
         }
 
         public static TsValue from<T1, T2, T3, T4, T5>(Union<T1, T2, T3, T4, T5>? value)
         {
-            return value is null ? from(null) : from(TsUnion.From(value));
+            return value.HasValue ? from(value.Value) : undefined();
         }
 
         public static TsValue from<T1, T2, T3, T4, T5, T6>(Union<T1, T2, T3, T4, T5, T6> value)
         {
-            return from(TsUnion.From<T1, T2, T3, T4, T5, T6>(value));
+            return from((object)value);
         }
 
         public static TsValue from<T1, T2, T3, T4, T5, T6>(Union<T1, T2, T3, T4, T5, T6>? value)
         {
-            return value is null ? from(null) : from(TsUnion.From(value));
+            return value.HasValue ? from(value.Value) : undefined();
         }
 
         public static TsValue from<T1, T2, T3, T4, T5, T6, T7>(Union<T1, T2, T3, T4, T5, T6, T7> value)
         {
-            return from(TsUnion.From<T1, T2, T3, T4, T5, T6, T7>(value));
+            return from((object)value);
         }
 
         public static TsValue from<T1, T2, T3, T4, T5, T6, T7>(Union<T1, T2, T3, T4, T5, T6, T7>? value)
         {
-            return value is null ? from(null) : from(TsUnion.From(value));
+            return value.HasValue ? from(value.Value) : undefined();
         }
 
         public static TsValue from<T1, T2, T3, T4, T5, T6, T7, T8>(Union<T1, T2, T3, T4, T5, T6, T7, T8> value)
         {
-            return from(TsUnion.From<T1, T2, T3, T4, T5, T6, T7, T8>(value));
+            return from((object)value);
         }
 
         public static TsValue from<T1, T2, T3, T4, T5, T6, T7, T8>(Union<T1, T2, T3, T4, T5, T6, T7, T8>? value)
         {
-            return value is null ? from(null) : from(TsUnion.From(value));
+            return value.HasValue ? from(value.Value) : undefined();
         }
 
         public static TsValue undefined()
@@ -139,6 +144,13 @@ namespace Tsonic.CSharp.Runtime
         {
             return unwrapForOperation(_value) is TsArray or IDynamicArray;
         }
+
+        public int ArrayLength => unwrapForOperation(_value) switch
+        {
+            TsArray target => target.length,
+            IDynamicArray target => target.Length,
+            _ => throw new TypeError("A native array length requires an array backing.")
+        };
 
         public TsValue ReadDynamicSlot(string key)
         {
@@ -338,6 +350,8 @@ namespace Tsonic.CSharp.Runtime
             return undefined();
         }
 
+        public static string ApplyDynamicTypeof(TsValue operand) => ApplyDynamicTypeof(operand._value);
+
         public static string ApplyDynamicTypeof(object? operand)
         {
             var unwrapped = unwrapForOperation(operand);
@@ -428,6 +442,7 @@ namespace Tsonic.CSharp.Runtime
                 TsObject => true,
                 TsArray => true,
                 TsUnion => true,
+                IClosedUnionValue => true,
                 TsFunction => true,
                 Task => true,
                 IDynamicObject => true,
@@ -591,12 +606,22 @@ namespace Tsonic.CSharp.Runtime
 
         private static object? unwrapForOperation(object? value)
         {
-            var carrier = UnwrapDynamicCarrier(value);
-            while (carrier is TsUnion union)
+            return UnwrapClosedValue(UnwrapDynamicCarrier(value));
+        }
+
+        public static object? UnwrapClosedValue(TsValue value) => UnwrapClosedValue(value._value);
+
+        public static object? UnwrapClosedValue(object? value)
+        {
+            while (true)
             {
-                carrier = union.unwrap();
+                switch (value)
+                {
+                    case TsValue typed: value = typed._value; break;
+                    case IClosedUnionValue union: value = union.UnionValue; break;
+                    default: return value;
+                }
             }
-            return carrier;
         }
 
         private static NotSupportedException unsupportedOperator(string op)

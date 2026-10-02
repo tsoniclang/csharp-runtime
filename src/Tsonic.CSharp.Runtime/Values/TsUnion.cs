@@ -1,6 +1,6 @@
 namespace Tsonic.CSharp.Runtime
 {
-    public sealed class TsUnion
+    public sealed class TsUnion : IClosedUnionValue
     {
         private readonly TsValue _value;
 
@@ -32,6 +32,10 @@ namespace Tsonic.CSharp.Runtime
         {
             return _value.unwrap();
         }
+
+        bool IClosedUnionValue.IsInitialized => true;
+
+        object? IClosedUnionValue.UnionValue => unwrap();
 
         public bool isArm(int armIndex)
         {

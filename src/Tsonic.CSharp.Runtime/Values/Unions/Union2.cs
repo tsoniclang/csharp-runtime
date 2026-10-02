@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Tsonic.CSharp.Runtime;
 
-public readonly struct Union<T1, T2> : IEquatable<Union<T1, T2>>
+public readonly struct Union<T1, T2> : IEquatable<Union<T1, T2>>, IClosedUnionValue
 {
     private readonly byte _index;
     private readonly T1 _value1;
@@ -15,6 +15,15 @@ public readonly struct Union<T1, T2> : IEquatable<Union<T1, T2>>
         _value1 = value1;
         _value2 = value2;
     }
+
+    bool IClosedUnionValue.IsInitialized => _index is >= 1 and <= 2;
+
+    object? IClosedUnionValue.UnionValue => _index switch
+    {
+        1 => _value1,
+        2 => _value2,
+        _ => throw new InvalidOperationException("Union is not initialized."),
+    };
 
     public static Union<T1, T2> From1(T1 value) => new(1, value, default!);
     public bool Is1() => _index == 1;
