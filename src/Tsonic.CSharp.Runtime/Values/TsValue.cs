@@ -163,6 +163,8 @@ namespace Tsonic.CSharp.Runtime
                 Error target => readErrorSlot(target, key),
                 Exception target => readExceptionSlot(target, key),
                 IDynamicObject target => target.TryReadDynamicSlot(key, out var value) ? from(value) : undefined(),
+                IDictionary<string, TsValue> target => target.TryGetValue(key, out var value) ? value : undefined(),
+                IReadOnlyDictionary<string, TsValue> target => target.TryGetValue(key, out var value) ? value : undefined(),
                 IDictionary<string, object?> target => target.TryGetValue(key, out var value) ? from(value) : undefined(),
                 IReadOnlyDictionary<string, object?> target => target.TryGetValue(key, out var value) ? from(value) : undefined(),
                 string target when key == "length" => from(target.Length),
@@ -196,6 +198,9 @@ namespace Tsonic.CSharp.Runtime
                     return target.WriteDynamicSlot(key, stored);
                 case IDynamicObject target:
                     target.WriteDynamicSlot(key, stored.unwrap());
+                    return stored;
+                case IDictionary<string, TsValue> target:
+                    target[key] = stored;
                     return stored;
                 case IDictionary<string, object?> target:
                     target[key] = stored.unwrap();
@@ -448,6 +453,8 @@ namespace Tsonic.CSharp.Runtime
                 IDynamicObject => true,
                 Error => true,
                 Exception => true,
+                IDictionary<string, TsValue> => true,
+                IReadOnlyDictionary<string, TsValue> => true,
                 IDictionary<string, object?> => true,
                 IReadOnlyDictionary<string, object?> => true,
                 ITsClosedValueCarrier => true,
