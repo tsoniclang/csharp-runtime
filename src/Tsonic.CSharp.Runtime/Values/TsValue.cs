@@ -227,14 +227,14 @@ namespace Tsonic.CSharp.Runtime
 
         public TsValue InvokeDynamic(params object?[] arguments)
         {
-            return invokeDynamicWithThis(undefined(), arguments);
+            return InvokeDynamicWithThis(undefined(), arguments);
         }
 
         public TsValue InvokeDynamicOptional(Func<object?[]> arguments)
         {
             return isNullish(_value)
                 ? undefined()
-                : invokeDynamicWithThis(undefined(), arguments());
+                : InvokeDynamicWithThis(undefined(), arguments());
         }
 
         public TsValue InvokeDynamicSlot(
@@ -252,7 +252,7 @@ namespace Tsonic.CSharp.Runtime
             {
                 return undefined();
             }
-            return callee.invokeDynamicWithThis(this, arguments());
+            return callee.InvokeDynamicWithThis(this, arguments());
         }
 
         public TsValue InvokeDynamicElement(
@@ -270,12 +270,12 @@ namespace Tsonic.CSharp.Runtime
             {
                 return undefined();
             }
-            return callee.invokeDynamicWithThis(this, arguments());
+            return callee.InvokeDynamicWithThis(this, arguments());
         }
 
-        private TsValue invokeDynamicWithThis(
+        public TsValue InvokeDynamicWithThis(
             TsValue receiver,
-            object?[] arguments)
+            params object?[] arguments)
         {
             return unwrapForOperation(_value) is TsFunction target
                 ? target.InvokeDynamicWithThis(receiver, arguments)
