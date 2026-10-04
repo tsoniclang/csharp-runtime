@@ -233,9 +233,38 @@ namespace Tsonic.CSharp.Runtime.Tests
             var native = new InvalidOperationException("native");
             Assert.Same(native, TsThrownValueException.from(TsThrownValueException.toValue(native)));
 
-            var nonNative = TsThrownValueException.from("source value");
+            var nonNative = TsThrownValueException.from(TsValue.from("source value"));
             var wrapper = Assert.IsType<TsThrownValueException>(nonNative);
             Assert.Equal("source value", wrapper.value.unwrap());
+        }
+
+        [Fact]
+        public void ThrownValueTransport_AddsOnlyTheRequiredNativeExceptionFrame()
+        {
+            var native = new InvalidOperationException("native");
+            var nativeValue = TsValue.from(native);
+            var payload = TsValue.from("source value");
+            Assert.Same(native, TsThrownValueException.from(nativeValue));
+            var thrown = Assert.IsType<TsThrownValueException>(TsThrownValueException.from(payload));
+            Assert.Same(payload.unwrap(), thrown.value.unwrap());
+            var union = Union<Exception, string>.From1(native);
+            Assert.Same(native, TsThrownValueException.from(TsValue.from(union)));
+            Measure(nativeValue, true);
+            Measure(payload, false);
+            Measure(payload, true);
+            for (var replay = 0; replay < 3; replay++)
+            {
+                Assert.Equal(0, Measure(nativeValue, true));
+                Assert.Equal(Measure(payload, false), Measure(payload, true));
+            }
+
+            static long Measure(TsValue value, bool transport)
+            {
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                for (var index = 0; index < 10_000; index++)
+                    GC.KeepAlive(transport ? TsThrownValueException.from(value) : new TsThrownValueException(value));
+                return GC.GetAllocatedBytesForCurrentThread() - before;
+            }
         }
 
         [Fact]

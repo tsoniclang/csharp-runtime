@@ -147,4 +147,60 @@ public sealed class ErrorTests
         Assert.Equal("CustomType", type.name);
         Assert.Equal("CustomUri", uri.name);
     }
+
+    [Fact]
+    public void NativeErrorObservationsPreserveLiveSourceFieldsAndOriginalIdentity()
+    {
+        var original = new TypeError("original");
+        System.Exception retained = original;
+        Assert.Equal("TypeError", ErrorObject.name(retained));
+        Assert.Equal("original", retained.Message);
+        Assert.Null(ErrorObject.stack(retained));
+        original.name = "UpdatedError";
+        original.message = "updated";
+        original.stack = "authored stack";
+        Assert.Same(original, retained);
+        Assert.Equal("UpdatedError", ErrorObject.name(retained));
+        Assert.Equal("updated", retained.Message);
+        Assert.Equal("authored stack", ErrorObject.stack(retained));
+        original.stack = null;
+        Assert.Null(ErrorObject.stack(retained));
+    }
+
+    [Fact]
+    public void NativeErrorObservationsDoNotConstructOrCaptureAnError()
+    {
+        var original = new System.InvalidOperationException("native failure");
+        Assert.Equal(nameof(System.InvalidOperationException), ErrorObject.name(original));
+        Assert.Equal("native failure", original.Message);
+        Assert.Null(ErrorObject.stack(original));
+        try { throw original; }
+        catch (System.InvalidOperationException caught)
+        {
+            Assert.Same(original, caught);
+            Assert.Equal(caught.StackTrace, ErrorObject.stack(caught));
+        }
+        Assert.Throws<System.ArgumentNullException>(() => ErrorObject.name(null!));
+        Assert.Throws<System.ArgumentNullException>(() => ErrorObject.stack(null!));
+    }
+
+    [Fact]
+    public void RetainedSourceErrorReadsHaveNoAdditionalAllocation()
+    {
+        System.Exception retained = new Error("failure") { name = "AuthoredError", stack = "authored stack" };
+        ObservationBytes(retained);
+        for (var replay = 0; replay < 3; replay++) Assert.Equal(0, ObservationBytes(retained));
+
+        static long ObservationBytes(System.Exception error)
+        {
+            var before = System.GC.GetAllocatedBytesForCurrentThread();
+            for (var index = 0; index < 10_000; index++)
+            {
+                System.GC.KeepAlive(ErrorObject.name(error));
+                System.GC.KeepAlive(error.Message);
+                System.GC.KeepAlive(ErrorObject.stack(error));
+            }
+            return System.GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+    }
 }

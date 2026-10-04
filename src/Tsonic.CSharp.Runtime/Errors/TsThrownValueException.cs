@@ -12,11 +12,11 @@ namespace Tsonic.CSharp.Runtime
             this.value = value;
         }
 
-        public static Exception from(object? value)
+        public static Exception from(TsValue value)
         {
-            return TsValue.UnwrapDynamicCarrier(value) is Exception exception
+            return TsValue.UnwrapClosedValue(value) is Exception exception
                 ? exception
-                : new TsThrownValueException(TsValue.from(value));
+                : new TsThrownValueException(value);
         }
 
         public static TsValue toValue(Exception exception)
