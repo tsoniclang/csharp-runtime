@@ -18,6 +18,13 @@ public readonly struct Union<T1, T2> : IEquatable<Union<T1, T2>>, IClosedUnionVa
 
     bool IClosedUnionValue.IsInitialized => _index is >= 1 and <= 2;
 
+    bool IClosedUnionValue.IsSupported => _index switch
+    {
+        1 => TsValue.isSupported(_value1),
+        2 => TsValue.isSupported(_value2),
+        _ => throw new InvalidOperationException("Union is not initialized."),
+    };
+
     object? IClosedUnionValue.UnionValue => _index switch
     {
         1 => _value1,

@@ -425,7 +425,7 @@ namespace Tsonic.CSharp.Runtime
             return false;
         }
 
-        private static bool isSupported(object? value)
+        internal static bool isSupported<Value>(Value value)
         {
             return value switch
             {
@@ -447,7 +447,8 @@ namespace Tsonic.CSharp.Runtime
                 TsObject => true,
                 TsArray => true,
                 TsUnion => true,
-                IClosedUnionValue => true,
+                TsValue => true,
+                IClosedUnionValue union => union.IsSupported,
                 TsFunction => true,
                 Task => true,
                 IDynamicObject => true,

@@ -28,6 +28,18 @@ public readonly struct Union<T1, T2, T3, T4, T5, T6, T7> : IEquatable<Union<T1, 
 
     bool IClosedUnionValue.IsInitialized => _index is >= 1 and <= 7;
 
+    bool IClosedUnionValue.IsSupported => _index switch
+    {
+        1 => TsValue.isSupported(_value1),
+        2 => TsValue.isSupported(_value2),
+        3 => TsValue.isSupported(_value3),
+        4 => TsValue.isSupported(_value4),
+        5 => TsValue.isSupported(_value5),
+        6 => TsValue.isSupported(_value6),
+        7 => TsValue.isSupported(_value7),
+        _ => throw new InvalidOperationException("Union is not initialized."),
+    };
+
     object? IClosedUnionValue.UnionValue => _index switch
     {
         1 => _value1,

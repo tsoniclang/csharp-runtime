@@ -34,6 +34,7 @@ namespace Tsonic.CSharp.Runtime
         }
 
         bool IClosedUnionValue.IsInitialized => true;
+        bool IClosedUnionValue.IsSupported => true;
 
         object? IClosedUnionValue.UnionValue => unwrap();
 

@@ -7,6 +7,55 @@ namespace Tsonic.CSharp.Runtime.Tests;
 public class NativeUnionValueTests
 {
     [Fact]
+    public void NativeUnionAdmissionRejectsOpenActivePayloadsAtEveryArity()
+    {
+        var open = new OpenPayload();
+        object[] invalid = {
+            Union<int, OpenPayload>.From2(open),
+            Union<int, string, OpenPayload>.From3(open),
+            Union<int, string, bool, OpenPayload>.From4(open),
+            Union<int, string, bool, byte, OpenPayload>.From5(open),
+            Union<int, string, bool, byte, long, OpenPayload>.From6(open),
+            Union<int, string, bool, byte, long, short, OpenPayload>.From7(open),
+            Union<int, string, bool, byte, long, short, double, OpenPayload>.From8(open),
+            Union<int, object>.From2(Union<string, OpenPayload>.From2(open)),
+        };
+        foreach (var value in invalid) Assert.Throws<NotSupportedException>(() => TsValue.from(value));
+        Assert.Equal(7, TsValue.CastDynamic<int>(TsValue.from(Union<int, OpenPayload>.From1(7))));
+        Assert.True(TsValue.from(Union<int, OpenPayload?>.From2(null)).isUndefined());
+    }
+
+    [Fact]
+    public void TypedPayloadAdmissionAddsNoBoxingBeyondTheOriginalNativeUnion()
+    {
+        AssertNativeUnionBoxingOnly(42);
+        AssertNativeUnionBoxingOnly(ulong.MaxValue);
+        AssertNativeUnionBoxingOnly((int?)42);
+        AssertNativeUnionBoxingOnly((int?)null);
+    }
+
+    private static void AssertNativeUnionBoxingOnly<Payload>(Payload payload)
+    {
+        var original = Union<Payload, string>.From1(payload);
+        for (var index = 0; index < 1000; index++) GC.KeepAlive(TsValue.from(original));
+        var outputs = new object[1000];
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var index = 0; index < outputs.Length; index++) outputs[index] = original;
+        var nativeBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        before = GC.GetAllocatedBytesForCurrentThread();
+        for (var index = 0; index < outputs.Length; index++) outputs[index] = TsValue.from(original).unwrap()!;
+        var selectedBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(nativeBytes > 0);
+        Assert.Equal(nativeBytes, selectedBytes);
+        GC.KeepAlive(outputs);
+    }
+
+    private sealed class OpenPayload
+    {
+        public string Value { get; } = "not a closed value carrier";
+    }
+
+    [Fact]
     public void EveryNativeUnionArityRetainsItsExactActivePayloadAndOriginalCarrier()
     {
         object[] values = {
