@@ -5,6 +5,51 @@ namespace Tsonic.CSharp.Runtime.Tests;
 public class EmptyObjectTests
 {
     [Fact]
+    public void FrozenStateSurvivesNativeObjectCarrierAliases()
+    {
+        var first = new EmptyObject();
+        object alias = first;
+        object second = EmptyObject.Freeze(new EmptyObject());
+        Assert.False(EmptyObject.IsFrozen(alias));
+        Assert.Same(first, EmptyObject.Freeze(alias));
+        Assert.True(EmptyObject.IsFrozen(first));
+        Assert.True(EmptyObject.IsFrozen(alias));
+        Assert.True(EmptyObject.IsFrozen(second));
+        Assert.NotSame(alias, second);
+    }
+
+    [Fact]
+    public void EmptyObjectOperationsDoNotGuessAnUnknownNativeCarrierOrInventAbsence()
+    {
+        object value = new object();
+        Assert.Throws<System.InvalidCastException>(() => EmptyObject.Freeze(value));
+        Assert.Throws<System.InvalidCastException>(() => EmptyObject.IsFrozen(value));
+        Assert.Throws<System.NullReferenceException>(() => EmptyObject.Freeze<object>(null!));
+        Assert.Throws<System.NullReferenceException>(() => EmptyObject.IsFrozen<object>(null!));
+    }
+
+    [Fact]
+    public void BroadNativeFreezeOperationsAllocateNoAdditionalState()
+    {
+        object value = new EmptyObject();
+        var observed = false;
+        for (var iteration = 0; iteration < 20000; iteration += 1)
+        {
+            EmptyObject.Freeze(value);
+            observed = EmptyObject.IsFrozen(value);
+        }
+        var before = System.GC.GetAllocatedBytesForCurrentThread();
+        for (var iteration = 0; iteration < 20000; iteration += 1)
+        {
+            EmptyObject.Freeze(value);
+            observed = EmptyObject.IsFrozen(value);
+        }
+        var allocated = System.GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(observed);
+        Assert.Equal(0, allocated);
+    }
+
+    [Fact]
     public void BroadValuesPreserveEmptyIdentityWithoutExposingProperties()
     {
         var first = new EmptyObject();
