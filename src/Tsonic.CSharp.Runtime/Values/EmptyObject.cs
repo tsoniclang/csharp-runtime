@@ -4,11 +4,11 @@ public sealed class EmptyObject : ITsClosedValueCarrier
 {
     private bool _frozen;
 
-    public static EmptyObject Freeze(EmptyObject value)
+    public static T Freeze<T>(T value) where T : class
     {
-        value._frozen = true;
+        ((EmptyObject)(object)value)._frozen = true;
         return value;
     }
 
-    public static bool IsFrozen(EmptyObject value) => value._frozen;
+    public static bool IsFrozen<T>(T value) where T : class => ((EmptyObject)(object)value)._frozen;
 }
