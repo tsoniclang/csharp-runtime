@@ -140,8 +140,10 @@ public sealed class TaskCompletionTests
         var explicitAbsence = TaskCompletion<int>.Create((_, reject) => reject(TsValue.undefined()));
         var omitted = await Assert.ThrowsAsync<TsThrownValueException>(async () => await implicitAbsence);
         var supplied = await Assert.ThrowsAsync<TsThrownValueException>(async () => await explicitAbsence);
-        Assert.True(omitted.value.isUndefined());
-        Assert.True(supplied.value.isUndefined());
+        Assert.Null(omitted.value);
+        Assert.Null(supplied.value);
+        Assert.True(TsThrownValueException.toValue(omitted).isUndefined());
+        Assert.True(TsThrownValueException.toValue(supplied).isUndefined());
     }
 
     [Fact]

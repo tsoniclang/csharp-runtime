@@ -235,7 +235,7 @@ namespace Tsonic.CSharp.Runtime.Tests
 
             var nonNative = TsThrownValueException.from(TsValue.from("source value"));
             var wrapper = Assert.IsType<TsThrownValueException>(nonNative);
-            Assert.Equal("source value", wrapper.value.unwrap());
+            Assert.Equal("source value", wrapper.value);
         }
 
         [Fact]
@@ -246,7 +246,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             var payload = TsValue.from("source value");
             Assert.Same(native, TsThrownValueException.from(nativeValue));
             var thrown = Assert.IsType<TsThrownValueException>(TsThrownValueException.from(payload));
-            Assert.Same(payload.unwrap(), thrown.value.unwrap());
+            Assert.Same(payload.unwrap(), thrown.value);
             var union = Union<Exception, string>.From1(native);
             Assert.Same(native, TsThrownValueException.from(TsValue.from(union)));
             Measure(nativeValue, true);
@@ -260,11 +260,26 @@ namespace Tsonic.CSharp.Runtime.Tests
 
             static long Measure(TsValue value, bool transport)
             {
+                var payload = TsValue.UnwrapClosedValue(value);
                 var before = GC.GetAllocatedBytesForCurrentThread();
                 for (var index = 0; index < 10_000; index++)
-                    GC.KeepAlive(transport ? TsThrownValueException.from(value) : new TsThrownValueException(value));
+                    GC.KeepAlive(transport ? TsThrownValueException.from(value) : new TsThrownValueException(payload));
                 return GC.GetAllocatedBytesForCurrentThread() - before;
             }
+        }
+
+        [Fact]
+        public void NativeThrownPayload_IsTransportedWithoutAdmittingDynamicReflection()
+        {
+            var payload = new OpenObject();
+            var thrown = Assert.IsType<TsThrownValueException>(TsThrownValueException.from(payload));
+            Assert.Same(payload, thrown.value);
+            Assert.Throws<NotSupportedException>(() => TsThrownValueException.toValue(thrown));
+            Assert.Throws<NotSupportedException>(() => TsValue.from(payload));
+            var absent = Assert.IsType<TsThrownValueException>(TsThrownValueException.from<object?>(null));
+            Assert.Null(absent.value);
+            Assert.True(TsThrownValueException.toValue(absent).isUndefined());
+            Assert.Throws<InvalidOperationException>(() => TsThrownValueException.from(default(Union<int, string>)));
         }
 
         [Fact]
