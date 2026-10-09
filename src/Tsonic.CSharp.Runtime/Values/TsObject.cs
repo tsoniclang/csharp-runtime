@@ -1,9 +1,10 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Tsonic.CSharp.Runtime
 {
-    public sealed class TsObject : IDynamicObject
+    public sealed class TsObject : IDynamicObject, IReadOnlyDictionary<string, TsValue>
     {
         private readonly Dictionary<string, TsValue> _properties = new();
 
@@ -18,6 +19,24 @@ namespace Tsonic.CSharp.Runtime
                 _properties[pair.Key] = TsValue.from(pair.Value);
             }
         }
+
+        public int Count => _properties.Count;
+
+        public IEnumerable<string> Keys => _properties.Keys;
+
+        public IEnumerable<TsValue> Values => _properties.Values;
+
+        public TsValue this[string key] => _properties[key];
+
+        public bool ContainsKey(string key) => _properties.ContainsKey(key);
+
+        public bool TryGetValue(string key, out TsValue value) => _properties.TryGetValue(key, out value);
+
+        public Dictionary<string, TsValue>.Enumerator GetEnumerator() => _properties.GetEnumerator();
+
+        IEnumerator<KeyValuePair<string, TsValue>> IEnumerable<KeyValuePair<string, TsValue>>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public TsValue ReadDynamicSlot(string key)
         {

@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Tsonic.CSharp.Runtime
 {
-    public sealed class TsArray
+    public sealed class TsArray : IDynamicArray
     {
         private readonly List<Slot> _values = new();
 
@@ -67,7 +67,11 @@ namespace Tsonic.CSharp.Runtime
 
         public TsValue WriteDynamicElement(object? key, object? value)
         {
-            var index = toArrayIndex(key);
+            return WriteAt(toArrayIndex(key), value);
+        }
+
+        private TsValue WriteAt(int index, object? value)
+        {
             if (index < 0)
             {
                 throw new RangeError("Array index cannot be negative.");
@@ -80,6 +84,54 @@ namespace Tsonic.CSharp.Runtime
             _values[index] = Slot.Present(stored);
             return stored;
         }
+
+        int IDynamicArray.Length => length;
+
+        bool IDynamicArray.HasOwn(string key) => key == "length" ||
+            int.TryParse(key, out var index) && HasIndex(index);
+
+        IEnumerable<KeyValuePair<string, object?>> IDynamicArray.Entries() => entries();
+
+        bool IDynamicArray.HasIndex(int index) => HasIndex(index);
+
+        private bool HasIndex(int index) => index >= 0 && index < _values.Count && _values[index].IsPresent;
+
+        bool IDynamicArray.TryGetAt(int index, out object? value) => TryGetAt(index, out value);
+
+        private bool TryGetAt(int index, out object? value)
+        {
+            if (!HasIndex(index)) { value = null; return false; }
+            value = _values[index].Value.unwrap();
+            return true;
+        }
+
+        bool IDynamicArray.TrySetAt(int index, object? value)
+        {
+            if (index < 0) return false;
+            WriteAt(index, value);
+            return true;
+        }
+
+        int IDynamicArray.SetLength(int newLength)
+        {
+            Resize(newLength);
+            return length;
+        }
+
+        bool IDynamicArray.DeleteAt(int index)
+        {
+            if (index >= 0 && index < _values.Count) _values[index] = Slot.Hole;
+            return true;
+        }
+
+        bool IDynamicObject.TryReadDynamicSlot(string key, out object? value)
+        {
+            if (key == "length") { value = length; return true; }
+            value = null;
+            return int.TryParse(key, out var index) && TryGetAt(index, out value);
+        }
+
+        void IDynamicObject.WriteDynamicSlot(string key, object? value) => WriteDynamicSlot(key, value);
 
         public IEnumerable<KeyValuePair<string, object?>> entries()
         {
