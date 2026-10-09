@@ -233,9 +233,12 @@ namespace Tsonic.CSharp.Runtime.Tests
             var native = new InvalidOperationException("native");
             Assert.Same(native, TsThrownValueException.from(TsThrownValueException.toValue(native)));
 
-            var nonNative = TsThrownValueException.from(TsValue.from("source value"));
+            var nonNative = TsThrownValueException.from("source value");
             var wrapper = Assert.IsType<TsThrownValueException>(nonNative);
             Assert.Equal("source value", wrapper.value);
+            var closed = Assert.IsType<TsThrownValueException>(
+                TsThrownValueException.from(TsValue.from("source value")));
+            Assert.Equal("source value", closed.value);
         }
 
         [Fact]
