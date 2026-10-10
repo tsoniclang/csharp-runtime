@@ -429,6 +429,15 @@ namespace Tsonic.CSharp.Runtime.Tests
                 return true;
             }
 
+            public void VisitElements<TVisitor>(ref TVisitor visitor) where TVisitor : struct, IArrayElementVisitor
+            {
+                for (var index = 0; index < Length; index++)
+                {
+                    TryGetAt(index, out var value);
+                    visitor.Visit(value);
+                }
+            }
+
             public int SetLength(int newLength)
             {
                 if (newLength < 0)

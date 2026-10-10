@@ -98,6 +98,15 @@ namespace Tsonic.CSharp.Runtime
 
         bool IDynamicArray.TryGetAt(int index, out object? value) => TryGetAt(index, out value);
 
+        void IDynamicArray.VisitElements<TVisitor>(ref TVisitor visitor)
+        {
+            for (var index = 0; index < length; index++)
+            {
+                TryGetAt(index, out var value);
+                visitor.Visit(value);
+            }
+        }
+
         private bool TryGetAt(int index, out object? value)
         {
             if (!HasIndex(index)) { value = null; return false; }
