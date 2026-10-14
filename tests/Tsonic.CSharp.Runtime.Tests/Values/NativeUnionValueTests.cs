@@ -125,7 +125,7 @@ public class NativeUnionValueTests
         var exact = TsValue.from(Union<double, ulong>.From2(18_446_744_073_709_551_615UL));
         Assert.Equal(ulong.MaxValue, TsValue.CastDynamic<ulong>(exact));
         Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(exact));
-        Assert.True(TsValue.ApplyDynamicBinaryBoolean(exact, "===", ulong.MaxValue));
+        Assert.True(TsValue.StrictEqual(exact, ulong.MaxValue));
     }
 
     [Fact]

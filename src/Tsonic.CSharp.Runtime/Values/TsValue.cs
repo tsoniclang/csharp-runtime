@@ -8,7 +8,7 @@ namespace Tsonic.CSharp.Runtime
     /// <summary>
     /// Closed value carrier for values whose static TypeScript source type is broad.
     /// </summary>
-    public readonly struct TsValue
+    public readonly partial struct TsValue
     {
         private readonly object? _value;
 
@@ -289,66 +289,6 @@ namespace Tsonic.CSharp.Runtime
                 : throw new TypeError("Value is not a constructor.");
         }
 
-        public static TsValue ApplyDynamicBinary(object? left, string op, object? right)
-        {
-            return op switch
-            {
-                "+" => plus(left, right),
-                "-" or "*" or "/" or "%" => from(NativeNumbers.Binary(unwrapForOperation(left), op, unwrapForOperation(right))),
-                _ => throw unsupportedOperator(op)
-            };
-        }
-
-        public static TsValue ApplyDynamicLogical(object? left, string op, Func<object?> right)
-        {
-            return op switch
-            {
-                "??" => isNullish(left) ? from(right()) : from(left),
-                "&&" => truthy(left) ? from(right()) : from(left),
-                "||" => truthy(left) ? from(left) : from(right()),
-                _ => throw unsupportedOperator(op)
-            };
-        }
-
-        public static bool ApplyDynamicBinaryBoolean(TsValue left, string op, TsValue right)
-        {
-            return ApplyDynamicBinaryBoolean(left._value, op, right._value);
-        }
-
-        public static bool ApplyDynamicBinaryBoolean(object? left, string op, object? right)
-        {
-            return op switch
-            {
-                "==" => looseEquals(left, right),
-                "!=" => !looseEquals(left, right),
-                "===" => strictEquals(left, right),
-                "!==" => !strictEquals(left, right),
-                "<" => tryCompare(left, right, out var lessThanComparison) && lessThanComparison < 0,
-                "<=" => tryCompare(left, right, out var lessThanOrEqualComparison) && lessThanOrEqualComparison <= 0,
-                ">" => tryCompare(left, right, out var greaterThanComparison) && greaterThanComparison > 0,
-                ">=" => tryCompare(left, right, out var greaterThanOrEqualComparison) && greaterThanOrEqualComparison >= 0,
-                _ => throw unsupportedOperator(op)
-            };
-        }
-
-        public static TsValue ApplyDynamicUnary(object? operand, string op)
-        {
-            return op switch
-            {
-                "+" or "-" or "~" => from(NativeNumbers.Unary(unwrapForOperation(operand), op)),
-                _ => throw unsupportedOperator(op)
-            };
-        }
-
-        public static bool ApplyDynamicUnaryBoolean(object? operand, string op)
-        {
-            return op switch
-            {
-                "!" => !truthy(operand),
-                _ => throw unsupportedOperator(op)
-            };
-        }
-
         public static TsValue ApplyDynamicVoid(object? operand)
         {
             _ = operand;
@@ -463,117 +403,6 @@ namespace Tsonic.CSharp.Runtime
             };
         }
 
-        private static TsValue plus(object? left, object? right)
-        {
-            var leftValue = unwrapForOperation(left);
-            var rightValue = unwrapForOperation(right);
-            return leftValue is string || rightValue is string
-                ? from(toJsString(leftValue) + toJsString(rightValue))
-                : from(NativeNumbers.Binary(leftValue, "+", rightValue));
-        }
-
-        private static bool tryCompare(object? left, object? right, out int comparison)
-        {
-            var leftValue = unwrapForOperation(left);
-            var rightValue = unwrapForOperation(right);
-            if (leftValue is string leftText && rightValue is string rightText)
-            {
-                comparison = string.CompareOrdinal(leftText, rightText);
-                return true;
-            }
-            var result = NativeNumbers.Compare(leftValue, rightValue);
-            comparison = result.GetValueOrDefault();
-            return result.HasValue;
-        }
-
-        private static bool looseEquals(object? left, object? right)
-        {
-            var leftValue = unwrapForOperation(left);
-            var rightValue = unwrapForOperation(right);
-            if (isNullish(leftValue) && isNullish(rightValue))
-            {
-                return true;
-            }
-            if (isNullish(leftValue) || isNullish(rightValue))
-            {
-                return false;
-            }
-            return strictEquals(leftValue, rightValue);
-        }
-
-        private static bool strictEquals(object? left, object? right)
-        {
-            var leftValue = unwrapForOperation(left);
-            var rightValue = unwrapForOperation(right);
-            if (NativeNumbers.IsNumber(leftValue) && NativeNumbers.IsNumber(rightValue))
-                return NativeNumbers.Compare(leftValue, rightValue) == 0;
-            if (ReferenceEquals(leftValue, rightValue))
-            {
-                return true;
-            }
-            if (isNullish(leftValue) || isNullish(rightValue))
-            {
-                return false;
-            }
-            return leftValue!.GetType() == rightValue!.GetType() && Equals(leftValue, rightValue);
-        }
-
-        private static bool truthy(object? value)
-        {
-            var unwrapped = unwrapForOperation(value);
-            return unwrapped switch
-            {
-                null => false,
-                bool boolean => boolean,
-                string text => text.Length > 0,
-                double number => number != 0 && !double.IsNaN(number),
-                float number => number != 0 && !float.IsNaN(number),
-                decimal number => number != 0,
-                int number => number != 0,
-                long number => number != 0,
-                uint number => number != 0,
-                ulong number => number != 0,
-                byte number => number != 0,
-                sbyte number => number != 0,
-                short number => number != 0,
-                ushort number => number != 0,
-                Half number => number != (Half)0 && !Half.IsNaN(number),
-                nint number => number != 0,
-                nuint number => number != 0,
-                Int128 number => number != 0,
-                UInt128 number => number != 0,
-                _ => true
-            };
-        }
-
-        private static string toJsString(object? value)
-        {
-            var unwrapped = unwrapForOperation(value);
-            return unwrapped switch
-            {
-                null => "null",
-                bool boolean => boolean ? "true" : "false",
-                string text => text,
-                double number => number.ToString(CultureInfo.InvariantCulture),
-                float number => number.ToString(CultureInfo.InvariantCulture),
-                decimal number => number.ToString(CultureInfo.InvariantCulture),
-                int number => number.ToString(CultureInfo.InvariantCulture),
-                long number => number.ToString(CultureInfo.InvariantCulture),
-                uint number => number.ToString(CultureInfo.InvariantCulture),
-                ulong number => number.ToString(CultureInfo.InvariantCulture),
-                byte number => number.ToString(CultureInfo.InvariantCulture),
-                sbyte number => number.ToString(CultureInfo.InvariantCulture),
-                short number => number.ToString(CultureInfo.InvariantCulture),
-                ushort number => number.ToString(CultureInfo.InvariantCulture),
-                Half number => number.ToString(CultureInfo.InvariantCulture),
-                nint number => number.ToString(CultureInfo.InvariantCulture),
-                nuint number => number.ToString(CultureInfo.InvariantCulture),
-                Int128 number => number.ToString(CultureInfo.InvariantCulture),
-                UInt128 number => number.ToString(CultureInfo.InvariantCulture),
-                _ => "[object Object]"
-            };
-        }
-
         private static TsValue readErrorSlot(Error error, string key)
         {
             return key switch
@@ -630,11 +459,6 @@ namespace Tsonic.CSharp.Runtime
                     default: return value;
                 }
             }
-        }
-
-        private static NotSupportedException unsupportedOperator(string op)
-        {
-            return new NotSupportedException($"TsValue has no closed native operation for '{op}'.");
         }
 
         internal static string propertyKey(object? key)

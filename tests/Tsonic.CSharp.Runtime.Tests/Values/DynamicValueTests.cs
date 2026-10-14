@@ -18,8 +18,8 @@ namespace Tsonic.CSharp.Runtime.Tests
             Assert.Same(task, TsValue.CastDynamic<Task<ulong>>(value));
             Assert.False(task.IsCompleted);
             Assert.Equal("object", TsValue.ApplyDynamicTypeof(value));
-            Assert.True(TsValue.ApplyDynamicBinaryBoolean(value, "===", TsValue.from(task)));
-            Assert.False(TsValue.ApplyDynamicBinaryBoolean(value, "===", TsValue.from(Task.CompletedTask)));
+            Assert.True(TsValue.StrictEqual(value, TsValue.from(task)));
+            Assert.False(TsValue.StrictEqual(value, TsValue.from(Task.CompletedTask)));
             Assert.Throws<NotSupportedException>(() => TsValue.from(new OpenObject()));
             source.SetResult(18_446_744_073_709_551_615UL);
             Assert.Equal(ulong.MaxValue, await TsValue.CastDynamic<Task<ulong>>(value));
@@ -50,7 +50,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             {
                 var left = TsValue.from(task);
                 var right = TsValue.from(task);
-                if (TsValue.ApplyDynamicBinaryBoolean(left, "===", right)) matches++;
+                if (TsValue.StrictEqual(left, right)) matches++;
             }
             var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
             Assert.Equal(1000, matches);
@@ -292,21 +292,21 @@ namespace Tsonic.CSharp.Runtime.Tests
 
             Assert.Equal(
                 "fallback",
-                TsValue.ApplyDynamicLogical(TsValue.undefined().unwrap(), "??", () =>
+                TsValue.Coalesce(TsValue.undefined().unwrap(), () =>
                 {
                     evaluations++;
                     return "fallback";
                 }).unwrap());
             Assert.Equal(
                 "left",
-                TsValue.ApplyDynamicLogical("left", "||", () =>
+                TsValue.Or("left", () =>
                 {
                     evaluations++;
                     return "unused";
                 }).unwrap());
             Assert.Equal(1, evaluations);
-            Assert.True(TsValue.ApplyDynamicBinaryBoolean(null, "==", TsValue.undefined().unwrap()));
-            Assert.True(TsValue.ApplyDynamicBinaryBoolean(null, "===", TsValue.undefined().unwrap()));
+            Assert.True(TsValue.Equal(null, TsValue.undefined().unwrap()));
+            Assert.True(TsValue.StrictEqual(null, TsValue.undefined().unwrap()));
         }
 
         [Fact]

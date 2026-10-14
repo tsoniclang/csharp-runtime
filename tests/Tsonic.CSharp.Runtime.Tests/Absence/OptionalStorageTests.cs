@@ -40,7 +40,7 @@ public class OptionalStorageTests
         var broadUndefined = TsValue.undefined();
         Assert.Null(broadNull.unwrap());
         Assert.Null(broadUndefined.unwrap());
-        Assert.True(TsValue.ApplyDynamicBinaryBoolean(broadNull, "===", broadUndefined));
+        Assert.True(TsValue.StrictEqual(broadNull, broadUndefined));
         Assert.True(JsValueOptionalStorage.Is1(broadNull));
         Assert.True(JsValueOptionalStorage.Is1(broadUndefined));
         Assert.Null(JsValueOptionalStorage.As1(broadNull));

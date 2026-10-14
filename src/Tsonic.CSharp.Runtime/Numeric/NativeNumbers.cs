@@ -100,20 +100,27 @@ internal static class NativeNumbers
         return false;
     }
 
-    internal static object Binary(object? left, string operation, object? right) => Promote(left, right) switch
+    internal static object Add(object? left, object? right) => Binary<Addition>(left, right);
+    internal static object Subtract(object? left, object? right) => Binary<Subtraction>(left, right);
+    internal static object Multiply(object? left, object? right) => Binary<Multiplication>(left, right);
+    internal static object Divide(object? left, object? right) => Binary<Division>(left, right);
+    internal static object Remainder(object? left, object? right) => Binary<Modulo>(left, right);
+
+    private static object Binary<TOperation>(object? left, object? right)
+        where TOperation : struct, IBinaryOperation => Promote(left, right) switch
     {
-        Kind.Int32 => Calculate<int>(left, operation, right),
-        Kind.UInt32 => Calculate<uint>(left, operation, right),
-        Kind.Int64 => Calculate<long>(left, operation, right),
-        Kind.UInt64 => Calculate<ulong>(left, operation, right),
-        Kind.Single => Calculate<float>(left, operation, right),
-        Kind.Double => Calculate<double>(left, operation, right),
-        Kind.Decimal => Calculate<decimal>(left, operation, right),
-        Kind.Half => Calculate<Half>(left, operation, right),
-        Kind.NativeInt => Calculate<nint>(left, operation, right),
-        Kind.NativeUint => Calculate<nuint>(left, operation, right),
-        Kind.Int128 => Calculate<Int128>(left, operation, right),
-        Kind.UInt128 => Calculate<UInt128>(left, operation, right),
+        Kind.Int32 => Calculate<int, TOperation>(left, right),
+        Kind.UInt32 => Calculate<uint, TOperation>(left, right),
+        Kind.Int64 => Calculate<long, TOperation>(left, right),
+        Kind.UInt64 => Calculate<ulong, TOperation>(left, right),
+        Kind.Single => Calculate<float, TOperation>(left, right),
+        Kind.Double => Calculate<double, TOperation>(left, right),
+        Kind.Decimal => Calculate<decimal, TOperation>(left, right),
+        Kind.Half => Calculate<Half, TOperation>(left, right),
+        Kind.NativeInt => Calculate<nint, TOperation>(left, right),
+        Kind.NativeUint => Calculate<nuint, TOperation>(left, right),
+        Kind.Int128 => Calculate<Int128, TOperation>(left, right),
+        Kind.UInt128 => Calculate<UInt128, TOperation>(left, right),
         _ => throw Unsupported(),
     };
 
@@ -134,37 +141,69 @@ internal static class NativeNumbers
         _ => throw Unsupported(),
     };
 
-    internal static object Unary(object? value, string operation) => (operation, value) switch
+    internal static object Positive(object? value) => value switch
     {
-        ("+", sbyte number) => +number, ("+", byte number) => +number,
-        ("+", short number) => +number, ("+", ushort number) => +number,
-        ("+", _) when IsNumber(value) => value!,
-        ("-", sbyte number) => -number, ("-", byte number) => -number,
-        ("-", short number) => -number, ("-", ushort number) => -number,
-        ("-", int number) => -number, ("-", uint number) => -number,
-        ("-", long number) => -number, ("-", float number) => -number,
-        ("-", double number) => -number, ("-", decimal number) => -number,
-        ("-", Half number) => -number, ("-", nint number) => -number,
-        ("-", Int128 number) => -number, ("-", UInt128 number) => -number,
-        ("~", sbyte number) => ~number, ("~", byte number) => ~number,
-        ("~", short number) => ~number, ("~", ushort number) => ~number,
-        ("~", int number) => ~number, ("~", uint number) => ~number,
-        ("~", long number) => ~number, ("~", ulong number) => ~number,
-        ("~", nint number) => ~number, ("~", nuint number) => ~number,
-        ("~", Int128 number) => ~number, ("~", UInt128 number) => ~number,
+        sbyte number => +number, byte number => +number,
+        short number => +number, ushort number => +number,
+        _ when IsNumber(value) => value!,
         _ => throw Unsupported(),
     };
 
-    private static T Calculate<T>(object? left, string operation, object? right) where T : INumber<T>
+    internal static object Negate(object? value) => value switch
     {
-        var first = Read<T>(left);
-        var second = Read<T>(right);
-        return operation switch
-        {
-            "+" => first + second, "-" => first - second, "*" => first * second,
-            "/" => first / second, "%" => first % second,
-            _ => throw Unsupported(),
-        };
+        sbyte number => -number, byte number => -number,
+        short number => -number, ushort number => -number,
+        int number => -number, uint number => -number,
+        long number => -number, float number => -number,
+        double number => -number, decimal number => -number,
+        Half number => -number, nint number => -number,
+        Int128 number => -number, UInt128 number => -number,
+        _ => throw Unsupported(),
+    };
+
+    internal static object BitwiseNot(object? value) => value switch
+    {
+        sbyte number => ~number, byte number => ~number,
+        short number => ~number, ushort number => ~number,
+        int number => ~number, uint number => ~number,
+        long number => ~number, ulong number => ~number,
+        nint number => ~number, nuint number => ~number,
+        Int128 number => ~number, UInt128 number => ~number,
+        _ => throw Unsupported(),
+    };
+
+    private static T Calculate<T, TOperation>(object? left, object? right)
+        where T : INumber<T>
+        where TOperation : struct, IBinaryOperation => TOperation.Apply(Read<T>(left), Read<T>(right));
+
+    private interface IBinaryOperation
+    {
+        static abstract T Apply<T>(T left, T right) where T : INumber<T>;
+    }
+
+    private readonly struct Addition : IBinaryOperation
+    {
+        public static T Apply<T>(T left, T right) where T : INumber<T> => left + right;
+    }
+
+    private readonly struct Subtraction : IBinaryOperation
+    {
+        public static T Apply<T>(T left, T right) where T : INumber<T> => left - right;
+    }
+
+    private readonly struct Multiplication : IBinaryOperation
+    {
+        public static T Apply<T>(T left, T right) where T : INumber<T> => left * right;
+    }
+
+    private readonly struct Division : IBinaryOperation
+    {
+        public static T Apply<T>(T left, T right) where T : INumber<T> => left / right;
+    }
+
+    private readonly struct Modulo : IBinaryOperation
+    {
+        public static T Apply<T>(T left, T right) where T : INumber<T> => left % right;
     }
 
     private static int? Compare<T>(object? left, object? right) where T : INumber<T>

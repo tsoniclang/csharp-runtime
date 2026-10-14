@@ -56,8 +56,8 @@ public class EmptyObjectTests
         var second = new EmptyObject();
         var wrapped = TsValue.from(first);
         Assert.Same(first, wrapped.unwrap());
-        Assert.True(TsValue.ApplyDynamicBinaryBoolean(wrapped, "===", TsValue.from(first)));
-        Assert.False(TsValue.ApplyDynamicBinaryBoolean(wrapped, "===", TsValue.from(second)));
+        Assert.True(TsValue.StrictEqual(wrapped, TsValue.from(first)));
+        Assert.False(TsValue.StrictEqual(wrapped, TsValue.from(second)));
         Assert.Throws<System.NotSupportedException>(() => wrapped.ReadDynamicSlot("field"));
         Assert.Throws<System.NotSupportedException>(() => TsValue.from(new object()));
     }

@@ -20,8 +20,8 @@ namespace Tsonic.CSharp.Runtime.Tests
             var alias = TsValue.from(record);
             Assert.Same(record, value.unwrap());
             Assert.Same(record, TsValue.CastDynamic<Dictionary<string, TsValue>>(value));
-            Assert.True(TsValue.ApplyDynamicBinaryBoolean(value, "===", alias));
-            Assert.False(TsValue.ApplyDynamicBinaryBoolean(value, "===", TsValue.from(new Dictionary<string, TsValue>())));
+            Assert.True(TsValue.StrictEqual(value, alias));
+            Assert.False(TsValue.StrictEqual(value, TsValue.from(new Dictionary<string, TsValue>())));
             Assert.Equal("object", TsValue.ApplyDynamicTypeof(value));
             Assert.Equal(ulong.MaxValue, Assert.IsType<ulong>(value.ReadDynamicSlot("present").unwrap()));
             Assert.True(value.ReadDynamicSlot("absent").isUndefined());
