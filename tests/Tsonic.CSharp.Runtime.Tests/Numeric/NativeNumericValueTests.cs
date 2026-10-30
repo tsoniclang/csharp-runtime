@@ -118,7 +118,7 @@ public sealed class NativeNumericValueTests
         Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.from("17")));
         Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.undefined()));
         Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>((object?)null));
-        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(new object()));
+        Assert.Throws<NotSupportedException>(() => TsValue.CastDynamic<BigInteger>(new object()));
         Assert.Throws<NotSupportedException>(() => TsValue.from(new object()));
         Assert.Throws<NotSupportedException>(() => TsValue.from(BigInteger.One));
         Assert.Throws<OverflowException>(() => TsValue.CastDynamic<long>(TsValue.from(UInt128.MaxValue)));
