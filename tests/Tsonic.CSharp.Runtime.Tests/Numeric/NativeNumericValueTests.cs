@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using Xunit;
 
 namespace Tsonic.CSharp.Runtime.Tests;
@@ -57,6 +58,110 @@ public sealed class NativeNumericValueTests
         Assert.Throws<OverflowException>(() => TsValue.CastDynamic<ulong>(TsValue.from(-1L)));
         Assert.Throws<TypeError>(() => TsValue.CastDynamic<double>(TsValue.from("17")));
         Assert.Throws<TypeError>(() => TsValue.CastDynamic<int>(TsValue.from(true)));
+    }
+
+    [Fact]
+    public void BigIntegerTargetsPreserveEveryAdmittedNativeIntegerWidth()
+    {
+        AssertBigIntegerProjection(sbyte.MinValue);
+        AssertBigIntegerProjection(byte.MaxValue);
+        AssertBigIntegerProjection(short.MinValue);
+        AssertBigIntegerProjection(ushort.MaxValue);
+        AssertBigIntegerProjection(int.MinValue);
+        AssertBigIntegerProjection(uint.MaxValue);
+        AssertBigIntegerProjection(9007199254740993L);
+        AssertBigIntegerProjection(9007199254740993UL);
+        AssertBigIntegerProjection(long.MinValue);
+        AssertBigIntegerProjection(ulong.MaxValue);
+        AssertBigIntegerProjection(nint.MinValue);
+        AssertBigIntegerProjection(nuint.MaxValue);
+        AssertBigIntegerProjection(Int128.MinValue);
+        AssertBigIntegerProjection(Int128.MaxValue);
+        AssertBigIntegerProjection(UInt128.MaxValue);
+    }
+
+    [Fact]
+    public void BigIntegerTargetsUseNativeFractionalAndNonfiniteConversions()
+    {
+        AssertBigIntegerProjection((Half)12.75);
+        AssertBigIntegerProjection((Half)(-12.75));
+        AssertBigIntegerProjection(Half.MaxValue);
+        AssertBigIntegerProjection(Half.MinValue);
+        AssertBigIntegerProjection(12.75f);
+        AssertBigIntegerProjection(-12.75f);
+        AssertBigIntegerProjection(float.MaxValue);
+        AssertBigIntegerProjection(float.MinValue);
+        AssertBigIntegerProjection(12.75d);
+        AssertBigIntegerProjection(-12.75d);
+        AssertBigIntegerProjection(double.MaxValue);
+        AssertBigIntegerProjection(double.MinValue);
+        AssertBigIntegerProjection(-0.0d);
+        AssertBigIntegerProjection(12.75m);
+        AssertBigIntegerProjection(-12.75m);
+        AssertBigIntegerProjection(decimal.MaxValue);
+        AssertBigIntegerProjection(decimal.MinValue);
+        AssertBigIntegerProjectionOverflow(Half.NaN);
+        AssertBigIntegerProjectionOverflow(Half.PositiveInfinity);
+        AssertBigIntegerProjectionOverflow(Half.NegativeInfinity);
+        AssertBigIntegerProjectionOverflow(float.NaN);
+        AssertBigIntegerProjectionOverflow(float.PositiveInfinity);
+        AssertBigIntegerProjectionOverflow(float.NegativeInfinity);
+        AssertBigIntegerProjectionOverflow(double.NaN);
+        AssertBigIntegerProjectionOverflow(double.PositiveInfinity);
+        AssertBigIntegerProjectionOverflow(double.NegativeInfinity);
+    }
+
+    [Fact]
+    public void BigIntegerTargetsDoNotBroadenClosedInputOrOtherTargetDomains()
+    {
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.from(true)));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.from("17")));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.undefined()));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>((object?)null));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(new object()));
+        Assert.Throws<NotSupportedException>(() => TsValue.from(new object()));
+        Assert.Throws<NotSupportedException>(() => TsValue.from(BigInteger.One));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<long>(TsValue.from(UInt128.MaxValue)));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<ulong>(TsValue.from(-1L)));
+    }
+
+    [Fact]
+    public void BigIntegerTypedBoundaryMatchesNativeConversionAllocations()
+    {
+        AssertBigIntegerProjectionAllocations(9007199254740993UL);
+        AssertBigIntegerProjectionAllocations(ulong.MaxValue);
+        AssertBigIntegerProjectionAllocations(long.MinValue);
+        AssertBigIntegerProjectionAllocations(Int128.MinValue);
+        AssertBigIntegerProjectionAllocations(UInt128.MaxValue);
+    }
+
+    private static void AssertBigIntegerProjection<T>(T value) where T : INumberBase<T>
+    {
+        Assert.Equal(BigInteger.CreateChecked(value), TsValue.CastDynamic<BigInteger>(TsValue.from(value)));
+    }
+
+    private static void AssertBigIntegerProjectionOverflow<T>(T value) where T : INumberBase<T>
+    {
+        Assert.Throws<OverflowException>(() => BigInteger.CreateChecked(value));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<BigInteger>(TsValue.from(value)));
+    }
+
+    private static void AssertBigIntegerProjectionAllocations<T>(T value) where T : INumberBase<T>
+    {
+        const int count = 4096;
+        var payload = TsValue.from(value);
+        var expected = BigInteger.CreateChecked(value);
+        var results = new BigInteger[count];
+        for (var index = 0; index < count; index++) results[index] = BigInteger.CreateChecked(value);
+        for (var index = 0; index < count; index++) results[index] = TsValue.CastDynamic<BigInteger>(payload);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var index = 0; index < count; index++) results[index] = BigInteger.CreateChecked(value);
+        var nativeBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        before = GC.GetAllocatedBytesForCurrentThread();
+        for (var index = 0; index < count; index++) results[index] = TsValue.CastDynamic<BigInteger>(payload);
+        var actualBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(nativeBytes, actualBytes);
+        for (var index = 0; index < count; index++) Assert.Equal(expected, results[index]);
     }
 
     [Fact]

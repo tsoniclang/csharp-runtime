@@ -76,6 +76,11 @@ internal static class NativeNumbers
             result = (T)(object)Read<UInt128>(value);
             return true;
         }
+        if (typeof(T) == typeof(BigInteger))
+        {
+            result = (T)(object)Read<BigInteger>(value);
+            return true;
+        }
         if (typeof(T) == typeof(Half))
         {
             result = (T)(object)Read<Half>(value);
