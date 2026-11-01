@@ -126,10 +126,6 @@ public readonly partial struct TsValue
         {
             return true;
         }
-        if (leftValue is Delegate || rightValue is Delegate)
-        {
-            return false;
-        }
         if (isNullish(leftValue) || isNullish(rightValue))
         {
             return false;
