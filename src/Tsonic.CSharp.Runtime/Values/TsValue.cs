@@ -418,9 +418,10 @@ namespace Tsonic.CSharp.Runtime
         {
             return key switch
             {
-                "name" => from("Error"),
+                "name" => from(error.GetType().Name),
                 "message" => from(error.Message),
                 "stack" => error.StackTrace is null ? undefined() : from(error.StackTrace),
+                "cause" => error.InnerException is null ? undefined() : from(error.InnerException),
                 _ => undefined()
             };
         }
