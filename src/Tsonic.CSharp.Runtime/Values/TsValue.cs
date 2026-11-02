@@ -307,7 +307,7 @@ namespace Tsonic.CSharp.Runtime
                 string => "string",
                 long or ulong or Int128 or UInt128 => "bigint",
                 double or float or decimal or Half or int or uint or byte or sbyte or short or ushort or nint or nuint => "number",
-                TsFunction => "function",
+                TsFunction or Delegate => "function",
                 _ => "object"
             };
         }
@@ -389,7 +389,7 @@ namespace Tsonic.CSharp.Runtime
                 TsUnion => true,
                 TsValue => true,
                 IClosedUnionValue union => union.IsSupported,
-                TsFunction => true,
+                TsFunction or Delegate => true,
                 Task => true,
                 IDynamicObject => true,
                 Error => true,

@@ -130,6 +130,10 @@ public readonly partial struct TsValue
         {
             return false;
         }
+        if (leftValue is Delegate || rightValue is Delegate)
+        {
+            return false;
+        }
         return leftValue!.GetType() == rightValue!.GetType() && Equals(leftValue, rightValue);
     }
 
