@@ -160,7 +160,6 @@ namespace Tsonic.CSharp.Runtime
                 TsObject target => target.ReadDynamicSlot(key),
                 TsArray target => target.ReadDynamicSlot(key),
                 TsFunction target => target.ReadDynamicSlot(key),
-                Error target => readErrorSlot(target, key),
                 Exception target => readExceptionSlot(target, key),
                 IDynamicObject target => target.TryReadDynamicSlot(key, out var value) ? from(value) : undefined(),
                 IDictionary<string, TsValue> target => target.TryGetValue(key, out var value) ? value : undefined(),
@@ -403,25 +402,14 @@ namespace Tsonic.CSharp.Runtime
             };
         }
 
-        private static TsValue readErrorSlot(Error error, string key)
-        {
-            return key switch
-            {
-                "name" => from(error.name),
-                "message" => from(error.message),
-                "stack" => error.stack is null ? undefined() : from(error.stack),
-                _ => undefined()
-            };
-        }
-
         private static TsValue readExceptionSlot(Exception error, string key)
         {
             return key switch
             {
                 "name" => from(error.GetType().Name),
                 "message" => from(error.Message),
-                "stack" => error.StackTrace is null ? undefined() : from(error.StackTrace),
-                "cause" => error.InnerException is null ? undefined() : from(error.InnerException),
+                "stack" => from(error.StackTrace),
+                "cause" => from(error.InnerException),
                 _ => undefined()
             };
         }
