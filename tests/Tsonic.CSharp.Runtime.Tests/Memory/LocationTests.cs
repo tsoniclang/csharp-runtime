@@ -74,7 +74,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             Assert.True(Location<int>.Same(first, shifted));
             Assert.Equal(hash, Location<int>.Hash(alias));
             Assert.Equal(hash, Location<int>.Hash(shifted));
-            Assert.Equal(0, Location<int>.Hash(null));
+            Assert.Equal(0U, Location<int>.Hash(null));
             Assert.Null(Location<int>.ProjectOptional<int>(null,
                 _ => throw new Exception("read must stay lazy"),
                 _ => throw new Exception("write must stay lazy")));

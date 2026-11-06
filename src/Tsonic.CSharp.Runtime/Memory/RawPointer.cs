@@ -65,9 +65,9 @@ namespace Tsonic.CSharp.Runtime
 
         public override bool Equals(object? other) => other is RawPointer pointer && Equals(pointer);
 
-        public override int GetHashCode() => unchecked((int)(uint)Hash(this));
+        public override int GetHashCode() => unchecked((int)Hash(this));
 
-        public static double Hash(RawPointer? pointer)
+        public static uint Hash(RawPointer? pointer)
         {
             var address = pointer is null ? 0UL : (ulong)(nuint)pointer._address;
             return (uint)(address ^ (address >> 32));

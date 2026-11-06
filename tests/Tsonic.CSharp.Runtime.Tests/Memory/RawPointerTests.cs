@@ -149,7 +149,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             Assert.Null(RawPointer.Offset(null, 0, Width));
             Assert.True(RawPointer.Same(null, null));
             Assert.Equal(0UL, RawPointer.Address(null, Width));
-            Assert.Equal(0, RawPointer.Hash(null));
+            Assert.Equal(0U, RawPointer.Hash(null));
         }
 
         [Fact]

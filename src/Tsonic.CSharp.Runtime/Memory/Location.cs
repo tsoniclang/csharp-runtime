@@ -171,7 +171,7 @@ namespace Tsonic.CSharp.Runtime
 
         public abstract void Store(T value);
 
-        public static double Hash(Location<T>? pointer) => pointer?.Identity.Hash() ?? 0;
+        public static uint Hash(Location<T>? pointer) => pointer?.Identity.Hash() ?? 0;
 
         public static Location<T> Bind(object identity, Func<T> read, Action<T> write) =>
             new AccessorLocation(new ReferenceLocationIdentity(identity), read, write);
