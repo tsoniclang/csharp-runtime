@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace Tsonic.CSharp.Runtime
@@ -304,7 +305,7 @@ namespace Tsonic.CSharp.Runtime
                 null => "object",
                 bool => "boolean",
                 string => "string",
-                long or ulong or Int128 or UInt128 => "bigint",
+                long or ulong or Int128 or UInt128 or BigInteger => "bigint",
                 double or float or decimal or Half or int or uint or byte or sbyte or short or ushort or nint or nuint => "number",
                 TsFunction or Delegate => "function",
                 _ => "object"
@@ -382,7 +383,7 @@ namespace Tsonic.CSharp.Runtime
                 sbyte => true,
                 short => true,
                 ushort => true,
-                Half or nint or nuint or Int128 or UInt128 => true,
+                Half or nint or nuint or Int128 or UInt128 or BigInteger => true,
                 TsObject => true,
                 TsArray => true,
                 TsUnion => true,

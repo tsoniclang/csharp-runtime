@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Threading.Tasks;
 using Tsonic.CSharp.Runtime;
 using Xunit;
@@ -225,6 +226,45 @@ namespace Tsonic.CSharp.Runtime.Tests
             Assert.Equal("boolean", TsValue.ApplyDynamicTypeof(TsValue.from(true)));
             Assert.Equal("string", TsValue.ApplyDynamicTypeof(TsValue.from("native")));
             Assert.Equal("object", TsValue.ApplyDynamicTypeof(TsValue.from(null)));
+        }
+
+        [Fact]
+        public void IntrinsicBigInteger_RetainsCategoryAndExactClosedPayload()
+        {
+            object[] originals = {
+                BigInteger.Zero,
+                (BigInteger.One << 256) + 1,
+                -(BigInteger.One << 256) - 1
+            };
+            foreach (var original in originals)
+            {
+                var value = TsValue.from(original);
+                Assert.Same(original, value.unwrap());
+                Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(value));
+                Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(original));
+                Assert.Equal((BigInteger)original, TsValue.CastDynamic<BigInteger>(value));
+            }
+            var union = TsValue.from(Union<string, BigInteger>.From2((BigInteger.One << 256) + 1));
+            Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(union));
+            Assert.Equal((BigInteger.One << 256) + 1, TsValue.CastDynamic<BigInteger>(union));
+        }
+
+        [Fact]
+        public void IntrinsicBigInteger_CategoryReadsDoNotReboxTheRetainedValue()
+        {
+            object original = (BigInteger.One << 256) + 1;
+            var value = TsValue.from(original);
+            for (var index = 0; index < 1000; index++) TsValue.ApplyDynamicTypeof(value);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var matches = 0;
+            for (var index = 0; index < 1000; index++)
+            {
+                if (TsValue.ApplyDynamicTypeof(value) == "bigint") matches++;
+            }
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.Equal(1000, matches);
+            Assert.Equal(0, allocated);
+            Assert.Same(original, value.unwrap());
         }
 
         [Fact]
