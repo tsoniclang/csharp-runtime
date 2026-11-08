@@ -1,6 +1,6 @@
 namespace Tsonic.CSharp.Runtime;
 
-internal interface IClosedUnionValue
+public interface IClosedUnionValue
 {
     bool IsInitialized { get; }
     bool IsSupported { get; }

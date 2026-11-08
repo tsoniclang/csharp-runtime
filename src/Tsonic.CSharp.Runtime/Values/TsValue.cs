@@ -330,7 +330,7 @@ namespace Tsonic.CSharp.Runtime
             return false;
         }
 
-        internal static bool isSupported<Value>(Value value)
+        public static bool isSupported<Value>(Value value)
         {
             return value switch
             {
