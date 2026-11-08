@@ -12,8 +12,8 @@ public sealed class NativeNumericValueTests
         const int count = 4096;
         const long leftValue = 9007199254740993;
         const long rightValue = 2;
-        var left = TsValue.from(leftValue);
-        var right = TsValue.from(rightValue);
+        var left = TsValue.fromnative(leftValue);
+        var right = TsValue.fromnative(rightValue);
         var results = new object?[count];
         for (var index = 0; index < count; index++) results[index] = TsValue.Add(left, right).unwrap();
         var before = GC.GetAllocatedBytesForCurrentThread();
@@ -37,27 +37,27 @@ public sealed class NativeNumericValueTests
     public void ExplicitNumericProjectionsUseTheRequestedNativeCarrier()
     {
         const long exact = 9007199254740993;
-        Assert.Equal((ulong)exact, TsValue.CastDynamic<ulong>(TsValue.from(exact)));
-        Assert.Equal(exact, TsValue.CastDynamic<long>(TsValue.from((ulong)exact)));
-        Assert.Equal(UInt128.MaxValue, TsValue.CastDynamic<UInt128>(TsValue.from(UInt128.MaxValue)));
-        Assert.Equal(17d, TsValue.CastDynamic<double>(TsValue.from(17)));
-        Assert.Equal(17f, TsValue.CastDynamic<float>(TsValue.from(17)));
-        Assert.Equal((sbyte)17, TsValue.CastDynamic<sbyte>(TsValue.from(17)));
-        Assert.Equal((byte)17, TsValue.CastDynamic<byte>(TsValue.from(17)));
-        Assert.Equal((short)17, TsValue.CastDynamic<short>(TsValue.from(17)));
-        Assert.Equal((ushort)17, TsValue.CastDynamic<ushort>(TsValue.from(17)));
-        Assert.Equal(17, TsValue.CastDynamic<int>(TsValue.from(17L)));
-        Assert.Equal(17u, TsValue.CastDynamic<uint>(TsValue.from(17)));
-        Assert.Equal((nint)17, TsValue.CastDynamic<nint>(TsValue.from(17)));
-        Assert.Equal((nuint)17, TsValue.CastDynamic<nuint>(TsValue.from(17)));
-        Assert.Equal((Int128)exact, TsValue.CastDynamic<Int128>(TsValue.from(exact)));
-        Assert.Equal((UInt128)exact, TsValue.CastDynamic<UInt128>(TsValue.from(exact)));
-        Assert.Equal((Half)17, TsValue.CastDynamic<Half>(TsValue.from(17)));
-        Assert.Equal(17m, TsValue.CastDynamic<decimal>(TsValue.from(17)));
-        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<int>(TsValue.from(exact)));
-        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<ulong>(TsValue.from(-1L)));
-        Assert.Throws<TypeError>(() => TsValue.CastDynamic<double>(TsValue.from("17")));
-        Assert.Throws<TypeError>(() => TsValue.CastDynamic<int>(TsValue.from(true)));
+        Assert.Equal((ulong)exact, TsValue.CastDynamic<ulong>(TsValue.fromnative(exact)));
+        Assert.Equal(exact, TsValue.CastDynamic<long>(TsValue.fromnative((ulong)exact)));
+        Assert.Equal(UInt128.MaxValue, TsValue.CastDynamic<UInt128>(TsValue.fromnative(UInt128.MaxValue)));
+        Assert.Equal(17d, TsValue.CastDynamic<double>(TsValue.fromnative(17)));
+        Assert.Equal(17f, TsValue.CastDynamic<float>(TsValue.fromnative(17)));
+        Assert.Equal((sbyte)17, TsValue.CastDynamic<sbyte>(TsValue.fromnative(17)));
+        Assert.Equal((byte)17, TsValue.CastDynamic<byte>(TsValue.fromnative(17)));
+        Assert.Equal((short)17, TsValue.CastDynamic<short>(TsValue.fromnative(17)));
+        Assert.Equal((ushort)17, TsValue.CastDynamic<ushort>(TsValue.fromnative(17)));
+        Assert.Equal(17, TsValue.CastDynamic<int>(TsValue.fromnative(17L)));
+        Assert.Equal(17u, TsValue.CastDynamic<uint>(TsValue.fromnative(17)));
+        Assert.Equal((nint)17, TsValue.CastDynamic<nint>(TsValue.fromnative(17)));
+        Assert.Equal((nuint)17, TsValue.CastDynamic<nuint>(TsValue.fromnative(17)));
+        Assert.Equal((Int128)exact, TsValue.CastDynamic<Int128>(TsValue.fromnative(exact)));
+        Assert.Equal((UInt128)exact, TsValue.CastDynamic<UInt128>(TsValue.fromnative(exact)));
+        Assert.Equal((Half)17, TsValue.CastDynamic<Half>(TsValue.fromnative(17)));
+        Assert.Equal(17m, TsValue.CastDynamic<decimal>(TsValue.fromnative(17)));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<int>(TsValue.fromnative(exact)));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<ulong>(TsValue.fromnative(-1L)));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<double>(TsValue.fromnative("17")));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<int>(TsValue.fromnative(true)));
     }
 
     [Fact]
@@ -114,15 +114,15 @@ public sealed class NativeNumericValueTests
     [Fact]
     public void BigIntegerTargetsDoNotBroadenClosedInputOrOtherTargetDomains()
     {
-        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.from(true)));
-        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.from("17")));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.fromnative(true)));
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.fromnative("17")));
         Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>(TsValue.undefined()));
         Assert.Throws<TypeError>(() => TsValue.CastDynamic<BigInteger>((object?)null));
         Assert.Throws<NotSupportedException>(() => TsValue.CastDynamic<BigInteger>(new object()));
-        Assert.Throws<NotSupportedException>(() => TsValue.from(new object()));
-        Assert.Throws<NotSupportedException>(() => TsValue.from(BigInteger.One));
-        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<long>(TsValue.from(UInt128.MaxValue)));
-        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<ulong>(TsValue.from(-1L)));
+        Assert.Throws<NotSupportedException>(() => TsValue.fromnative(new object()));
+        Assert.Equal(BigInteger.One, TsValue.CastDynamic<BigInteger>(TsValue.fromnative(BigInteger.One)));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<long>(TsValue.fromnative(UInt128.MaxValue)));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<ulong>(TsValue.fromnative(-1L)));
     }
 
     [Fact]
@@ -137,19 +137,19 @@ public sealed class NativeNumericValueTests
 
     private static void AssertBigIntegerProjection<T>(T value) where T : INumberBase<T>
     {
-        Assert.Equal(BigInteger.CreateChecked(value), TsValue.CastDynamic<BigInteger>(TsValue.from(value)));
+        Assert.Equal(BigInteger.CreateChecked(value), TsValue.CastDynamic<BigInteger>(TsValue.fromnative(value)));
     }
 
     private static void AssertBigIntegerProjectionOverflow<T>(T value) where T : INumberBase<T>
     {
         Assert.Throws<OverflowException>(() => BigInteger.CreateChecked(value));
-        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<BigInteger>(TsValue.from(value)));
+        Assert.Throws<OverflowException>(() => TsValue.CastDynamic<BigInteger>(TsValue.fromnative(value)));
     }
 
     private static void AssertBigIntegerProjectionAllocations<T>(T value) where T : INumberBase<T>
     {
         const int count = 4096;
-        var payload = TsValue.from(value);
+        var payload = TsValue.fromnative(value);
         var expected = BigInteger.CreateChecked(value);
         var results = new BigInteger[count];
         for (var index = 0; index < count; index++) results[index] = BigInteger.CreateChecked(value);
@@ -205,7 +205,7 @@ public sealed class NativeNumericValueTests
     {
         foreach (var value in new object[] { (Half)2, (nint)2, (nuint)2, Int128.MinValue, UInt128.MaxValue })
         {
-            Assert.Equal(value, TsValue.from(value).unwrap());
+            Assert.Equal(value, TsValue.fromnative(value).unwrap());
             Assert.True(TsValue.StrictEqual(value, value));
             Assert.Equal(value, TsValue.Positive(value).unwrap());
         }

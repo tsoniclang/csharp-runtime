@@ -13,20 +13,20 @@ namespace Tsonic.CSharp.Runtime.Tests
         {
             var record = new Dictionary<string, TsValue>
             {
-                ["present"] = TsValue.from(ulong.MaxValue),
+                ["present"] = TsValue.fromnative(ulong.MaxValue),
                 ["absent"] = TsValue.undefined(),
             };
-            var value = TsValue.from(record);
-            var alias = TsValue.from(record);
+            var value = TsValue.fromnative(record);
+            var alias = TsValue.fromnative(record);
             Assert.Same(record, value.unwrap());
             Assert.Same(record, TsValue.CastDynamic<Dictionary<string, TsValue>>(value));
             Assert.True(TsValue.StrictEqual(value, alias));
-            Assert.False(TsValue.StrictEqual(value, TsValue.from(new Dictionary<string, TsValue>())));
+            Assert.False(TsValue.StrictEqual(value, TsValue.fromnative(new Dictionary<string, TsValue>())));
             Assert.Equal("object", TsValue.ApplyDynamicTypeof(value));
             Assert.Equal(ulong.MaxValue, Assert.IsType<ulong>(value.ReadDynamicSlot("present").unwrap()));
             Assert.True(value.ReadDynamicSlot("absent").isUndefined());
             Assert.True(value.ReadDynamicSlot("missing").isUndefined());
-            record["present"] = TsValue.from(ulong.MaxValue - 1);
+            record["present"] = TsValue.fromnative(ulong.MaxValue - 1);
             Assert.Equal(ulong.MaxValue - 1, value.ReadDynamicSlotAs<ulong>("present"));
         }
 
@@ -34,7 +34,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         public void WritesAndElementReads_UseTheSameBackingAndOneAbsence()
         {
             var record = new Dictionary<string, TsValue>();
-            var value = TsValue.from(record);
+            var value = TsValue.fromnative(record);
             var original = TsValue.CreateDynamicObject("identity", "retained");
             Assert.Same(original.unwrap(), value.WriteDynamicSlot("child", original).unwrap());
             Assert.Same(original.unwrap(), record["child"].unwrap());
@@ -53,11 +53,11 @@ namespace Tsonic.CSharp.Runtime.Tests
         [Fact]
         public void ReadOnlyAdmission_UsesTheOriginalLiveViewAndRejectsWrites()
         {
-            var record = new Dictionary<string, TsValue> { ["live"] = TsValue.from("before") };
+            var record = new Dictionary<string, TsValue> { ["live"] = TsValue.fromnative("before") };
             var view = new ReadOnlyDictionary<string, TsValue>(record);
-            var value = TsValue.from(view);
+            var value = TsValue.fromnative(view);
             Assert.Same(view, value.unwrap());
-            record["live"] = TsValue.from("after");
+            record["live"] = TsValue.fromnative("after");
             Assert.Equal("after", value.ReadDynamicSlot("live").unwrap());
             Assert.Throws<NotSupportedException>(() => value.WriteDynamicSlot("live", "blocked"));
             Assert.Equal("after", record["live"].unwrap());
@@ -66,9 +66,9 @@ namespace Tsonic.CSharp.Runtime.Tests
         [Fact]
         public void NestedClosedUnion_RetainsRecordAliasesAndOptionalReads()
         {
-            var record = new Dictionary<string, TsValue> { ["wide"] = TsValue.from(ulong.MaxValue) };
+            var record = new Dictionary<string, TsValue> { ["wide"] = TsValue.fromnative(ulong.MaxValue) };
             var union = Union<int, Dictionary<string, TsValue>>.From2(record);
-            var value = TsValue.from(union);
+            var value = TsValue.fromnative(union);
             Assert.Same(record, TsValue.UnwrapClosedValue(value));
             Assert.Equal(ulong.MaxValue, value.ReadDynamicSlotOptional("wide").unwrap());
             value.WriteDynamicSlot("wide", 1UL);
@@ -79,17 +79,17 @@ namespace Tsonic.CSharp.Runtime.Tests
         [Fact]
         public void NativeRecordAdmissionAndReads_AddNoWrapperOrPerReadAllocation()
         {
-            var record = new Dictionary<string, TsValue> { ["wide"] = TsValue.from(ulong.MaxValue) };
+            var record = new Dictionary<string, TsValue> { ["wide"] = TsValue.fromnative(ulong.MaxValue) };
             for (var index = 0; index < 1000; index++)
             {
-                var warm = TsValue.from(record);
+                var warm = TsValue.fromnative(record);
                 warm.ReadDynamicSlot("wide");
             }
             var before = GC.GetAllocatedBytesForCurrentThread();
             var total = 0;
             for (var index = 0; index < 10000; index++)
             {
-                var value = TsValue.from(record);
+                var value = TsValue.fromnative(record);
                 if (ReferenceEquals(value.unwrap(), record) && value.ReadDynamicSlotAs<ulong>("wide") == ulong.MaxValue)
                     total++;
             }
@@ -101,9 +101,9 @@ namespace Tsonic.CSharp.Runtime.Tests
         [Fact]
         public void UnrelatedDictionaryPayloads_StayOutsideTheClosedCarrierContract()
         {
-            Assert.Throws<NotSupportedException>(() => TsValue.from(new Dictionary<string, int>()));
-            Assert.Throws<NotSupportedException>(() => TsValue.from(new Dictionary<int, TsValue>()));
-            Assert.Throws<NotSupportedException>(() => TsValue.from(new object()));
+            Assert.Throws<NotSupportedException>(() => TsValue.fromnative(new Dictionary<string, int>()));
+            Assert.Throws<NotSupportedException>(() => TsValue.fromnative(new Dictionary<int, TsValue>()));
+            Assert.Throws<NotSupportedException>(() => TsValue.fromnative(new object()));
         }
     }
 }

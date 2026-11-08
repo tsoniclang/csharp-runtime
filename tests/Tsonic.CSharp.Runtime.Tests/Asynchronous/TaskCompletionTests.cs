@@ -72,7 +72,7 @@ public sealed class TaskCompletionTests
         var task = TaskCompletion<int>.Create((resolve, reject) =>
         {
             resolve(7);
-            reject(TsValue.from(new InvalidOperationException("late rejection")));
+            reject(TsValue.fromnative(new InvalidOperationException("late rejection")));
             resolve(9);
         });
         Assert.Equal(7, await task);
@@ -85,7 +85,7 @@ public sealed class TaskCompletionTests
         var task = TaskCompletion<ulong>.Create((resolve, reject) =>
         {
             resolve(pending.Task);
-            reject(TsValue.from(new InvalidOperationException("late rejection")));
+            reject(TsValue.fromnative(new InvalidOperationException("late rejection")));
             resolve(0UL);
             throw new InvalidOperationException("late throw");
         });
@@ -101,7 +101,7 @@ public sealed class TaskCompletionTests
         var task = TaskCompletion.Create((resolve, reject) =>
         {
             resolve(pending.Task);
-            reject(TsValue.from(new InvalidOperationException("late rejection")));
+            reject(TsValue.fromnative(new InvalidOperationException("late rejection")));
             resolve();
             throw new InvalidOperationException("late throw");
         });
@@ -115,20 +115,20 @@ public sealed class TaskCompletionTests
     public async Task Create_RejectsWithExceptionReason()
     {
         var expected = new InvalidOperationException("rejected");
-        var task = TaskCompletion<int>.Create((_, reject) => reject(TsValue.from(expected)));
+        var task = TaskCompletion<int>.Create((_, reject) => reject(TsValue.fromnative(expected)));
         Assert.Same(expected, await Assert.ThrowsAsync<InvalidOperationException>(async () => await task));
-        var untyped = TaskCompletion.Create((_, reject) => reject(TsValue.from(expected)));
+        var untyped = TaskCompletion.Create((_, reject) => reject(TsValue.fromnative(expected)));
         Assert.Same(expected, await Assert.ThrowsAsync<InvalidOperationException>(async () => await untyped));
     }
 
     [Fact]
     public async Task Create_UsesCanonicalClosedValueRejection()
     {
-        var task = TaskCompletion<int>.Create((_, reject) => reject(TsValue.from("reason")));
+        var task = TaskCompletion<int>.Create((_, reject) => reject(TsValue.fromnative("reason")));
         var actual = await Assert.ThrowsAsync<TsThrownValueException>(async () => await task);
         Assert.Equal("reason", TsValue.UnwrapClosedValue(actual.value));
         var reason = new Reason();
-        var closed = TaskCompletion.Create((_, reject) => reject(TsValue.from(reason)));
+        var closed = TaskCompletion.Create((_, reject) => reject(TsValue.fromnative(reason)));
         var original = await Assert.ThrowsAsync<TsThrownValueException>(async () => await closed);
         Assert.Same(reason, TsValue.UnwrapClosedValue(original.value));
     }
@@ -185,7 +185,7 @@ public sealed class TaskCompletionTests
         Assert.False(rejected.IsCompleted);
         resolveLater!(31);
         var expected = new InvalidOperationException("retained callback");
-        rejectLater!(TsValue.from(expected));
+        rejectLater!(TsValue.fromnative(expected));
         Assert.Equal(31, await resolved);
         Assert.Same(expected, await Assert.ThrowsAsync<InvalidOperationException>(async () => await rejected));
     }
@@ -203,13 +203,13 @@ public sealed class TaskCompletionTests
         var expected = new InvalidOperationException("competing rejection");
         using var start = new ManualResetEventSlim();
         var resolveWork = Task.Run(() => { start.Wait(); resolveLater!(17); });
-        var rejectWork = Task.Run(() => { start.Wait(); rejectLater!(TsValue.from(expected)); });
+        var rejectWork = Task.Run(() => { start.Wait(); rejectLater!(TsValue.fromnative(expected)); });
         start.Set();
         await Task.WhenAll(resolveWork, rejectWork).WaitAsync(TimeSpan.FromSeconds(5));
         if (task.IsCompletedSuccessfully)
         {
             Assert.Equal(17, await task);
-            rejectLater!(TsValue.from(expected));
+            rejectLater!(TsValue.fromnative(expected));
             Assert.Equal(17, await task);
         }
         else
@@ -234,13 +234,13 @@ public sealed class TaskCompletionTests
         var expected = new InvalidOperationException("competing void rejection");
         using var start = new ManualResetEventSlim();
         var resolveWork = Task.Run(() => { start.Wait(); resolveLater!(); });
-        var rejectWork = Task.Run(() => { start.Wait(); rejectLater!(TsValue.from(expected)); });
+        var rejectWork = Task.Run(() => { start.Wait(); rejectLater!(TsValue.fromnative(expected)); });
         start.Set();
         await Task.WhenAll(resolveWork, rejectWork).WaitAsync(TimeSpan.FromSeconds(5));
         if (task.IsCompletedSuccessfully)
         {
             await task;
-            rejectLater!(TsValue.from(expected));
+            rejectLater!(TsValue.fromnative(expected));
             Assert.True(task.IsCompletedSuccessfully);
         }
         else

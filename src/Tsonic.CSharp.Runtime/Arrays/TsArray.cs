@@ -38,7 +38,7 @@ namespace Tsonic.CSharp.Runtime
         {
             foreach (var value in source)
             {
-                _values.Add(Slot.Present(TsValue.from(value)));
+                _values.Add(Slot.Present(TsValue.fromnative(value)));
             }
         }
 
@@ -46,31 +46,45 @@ namespace Tsonic.CSharp.Runtime
 
         public TsValue ReadDynamicSlot(string key)
         {
-            return key == "length" ? TsValue.from(length) : ReadDynamicElement(key);
+            return key == "length" ? TsValue.fromnative(length) : ReadDynamicElement(key);
         }
 
         public TsValue WriteDynamicSlot(string key, object? value)
         {
+            return WriteDynamicSlot(key, TsValue.fromnative(value));
+        }
+
+        public TsValue WriteDynamicSlot(string key, TsValue value)
+        {
             if (key == "length")
             {
                 Resize(toArrayIndex(value));
-                return TsValue.from(length);
+                return TsValue.fromnative(length);
             }
             return WriteDynamicElement(key, value);
         }
 
         public TsValue ReadDynamicElement(object? key)
         {
-            var index = toArrayIndex(key);
+            return ReadDynamicElement(toArrayIndex(key));
+        }
+
+        public TsValue ReadDynamicElement(int index)
+        {
             return index >= 0 && index < _values.Count ? _values[index].Value : TsValue.undefined();
         }
 
         public TsValue WriteDynamicElement(object? key, object? value)
         {
-            return WriteAt(toArrayIndex(key), value);
+            return WriteDynamicElement(toArrayIndex(key), TsValue.fromnative(value));
         }
 
-        private TsValue WriteAt(int index, object? value)
+        public TsValue WriteDynamicElement(object? key, TsValue value)
+        {
+            return WriteDynamicElement(toArrayIndex(key), value);
+        }
+
+        public TsValue WriteDynamicElement(int index, TsValue value)
         {
             if (index < 0)
             {
@@ -80,9 +94,8 @@ namespace Tsonic.CSharp.Runtime
             {
                 _values.Add(Slot.Hole);
             }
-            var stored = TsValue.from(value);
-            _values[index] = Slot.Present(stored);
-            return stored;
+            _values[index] = Slot.Present(value);
+            return value;
         }
 
         int IDynamicArray.Length => length;
@@ -117,7 +130,7 @@ namespace Tsonic.CSharp.Runtime
         bool IDynamicArray.TrySetAt(int index, object? value)
         {
             if (index < 0) return false;
-            WriteAt(index, value);
+            WriteDynamicElement(index, TsValue.fromnative(value));
             return true;
         }
 

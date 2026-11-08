@@ -13,19 +13,19 @@ public sealed class NativeDelegateValueTests
         Func<int, int> equivalent = new(owner.Read);
         Assert.True(original.Equals(equivalent));
         Assert.False(ReferenceEquals(original, equivalent));
-        var value = TsValue.from(original);
+        var value = TsValue.fromnative(original);
         Assert.Same(original, value.unwrap());
         Assert.Same(original, TsValue.CastDynamic<Func<int, int>>(value));
         Assert.Equal("function", TsValue.ApplyDynamicTypeof(value));
-        Assert.True(TsValue.StrictEqual(value, TsValue.from(original)));
-        Assert.False(TsValue.StrictEqual(value, TsValue.from(equivalent)));
-        Assert.True(TsValue.StrictNotEqual(value, TsValue.from(equivalent)));
+        Assert.True(TsValue.StrictEqual(value, TsValue.fromnative(original)));
+        Assert.False(TsValue.StrictEqual(value, TsValue.fromnative(equivalent)));
+        Assert.True(TsValue.StrictNotEqual(value, TsValue.fromnative(equivalent)));
         owner.Total = 7;
         Assert.Equal(10, TsValue.CastDynamic<Func<int, int>>(value)(3));
         Assert.Equal(10, owner.Total);
         Assert.Equal(1, owner.Calls);
         Action action = owner.Tick;
-        var storedAction = TsValue.from(action);
+        var storedAction = TsValue.fromnative(action);
         Assert.Same(action, storedAction.unwrap());
         TsValue.CastDynamic<Action>(storedAction)();
         Assert.Equal(11, owner.Total);
@@ -33,8 +33,8 @@ public sealed class NativeDelegateValueTests
         var firstList = original + original;
         var secondList = equivalent + equivalent;
         Assert.True(firstList.Equals(secondList));
-        Assert.False(TsValue.StrictEqual(TsValue.from(firstList), TsValue.from(secondList)));
-        Assert.True(TsValue.StrictEqual(TsValue.from(firstList), TsValue.from(firstList)));
+        Assert.False(TsValue.StrictEqual(TsValue.fromnative(firstList), TsValue.fromnative(secondList)));
+        Assert.True(TsValue.StrictEqual(TsValue.fromnative(firstList), TsValue.fromnative(firstList)));
     }
 
     [Fact]
@@ -42,20 +42,20 @@ public sealed class NativeDelegateValueTests
     {
         Func<long, long> integer = Echo<long>;
         Func<string, string> text = Echo<string>;
-        var value = TsValue.from(integer);
+        var value = TsValue.fromnative(integer);
         Assert.Same(integer, TsValue.CastDynamic<Func<long, long>>(value));
         Assert.Equal(9007199254740993L, TsValue.CastDynamic<Func<long, long>>(value)(9007199254740993L));
-        Assert.Equal("function", TsValue.ApplyDynamicTypeof(TsValue.from(text)));
-        Assert.False(TsValue.StrictEqual(value, TsValue.from(text)));
+        Assert.Equal("function", TsValue.ApplyDynamicTypeof(TsValue.fromnative(text)));
+        Assert.False(TsValue.StrictEqual(value, TsValue.fromnative(text)));
         Assert.Throws<TypeError>(() => TsValue.CastDynamic<Func<int, int>>(value));
         var refusal = Assert.Throws<TypeError>(() => value.InvokeDynamic(7));
         Assert.Equal("Value is not callable.", refusal.Message);
-        Assert.Throws<NotSupportedException>(() => TsValue.from(new object()));
+        Assert.Throws<NotSupportedException>(() => TsValue.fromnative(new object()));
         var error = new InvalidOperationException("original native failure");
         Func<int> throwing = () => throw error;
-        var observed = Assert.Throws<InvalidOperationException>(() => TsValue.CastDynamic<Func<int>>(TsValue.from(throwing))());
+        var observed = Assert.Throws<InvalidOperationException>(() => TsValue.CastDynamic<Func<int>>(TsValue.fromnative(throwing))());
         Assert.Same(error, observed);
-        Assert.True(TsValue.StrictEqual(TsValue.undefined(), TsValue.from(null)));
+        Assert.True(TsValue.StrictEqual(TsValue.undefined(), TsValue.fromnative<object?>(null)));
         Assert.Equal("object", TsValue.ApplyDynamicTypeof(TsValue.undefined()));
     }
 
@@ -67,9 +67,9 @@ public sealed class NativeDelegateValueTests
         Func<int, int> equivalent = new(owner.Read);
         for (var index = 0; index < 16384; index++)
         {
-            var value = TsValue.from(original);
-            _ = TsValue.StrictEqual(value, TsValue.from(original));
-            _ = TsValue.StrictEqual(value, TsValue.from(equivalent));
+            var value = TsValue.fromnative(original);
+            _ = TsValue.StrictEqual(value, TsValue.fromnative(original));
+            _ = TsValue.StrictEqual(value, TsValue.fromnative(equivalent));
             _ = TsValue.CastDynamic<Func<int, int>>(value);
             _ = TsValue.ApplyDynamicTypeof(value);
         }
@@ -77,9 +77,9 @@ public sealed class NativeDelegateValueTests
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < 16384; index++)
         {
-            var value = TsValue.from(original);
-            if (TsValue.StrictEqual(value, TsValue.from(original)) &&
-                !TsValue.StrictEqual(value, TsValue.from(equivalent)) &&
+            var value = TsValue.fromnative(original);
+            if (TsValue.StrictEqual(value, TsValue.fromnative(original)) &&
+                !TsValue.StrictEqual(value, TsValue.fromnative(equivalent)) &&
                 ReferenceEquals(original, TsValue.CastDynamic<Func<int, int>>(value)) &&
                 TsValue.ApplyDynamicTypeof(value) == "function") matches++;
         }

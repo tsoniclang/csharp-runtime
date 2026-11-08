@@ -27,9 +27,9 @@ namespace Tsonic.CSharp.Runtime.Tests
         public void SelectedInvocation_PreservesFailureAndRejectsNonCallablePayload()
         {
             var failure = new InvalidOperationException("native failure");
-            var callee = TsValue.from(new TsFunction(_ => throw failure));
+            var callee = TsValue.fromnative(new TsFunction(_ => throw failure));
             Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => callee.InvokeDynamicWithThis(TsValue.undefined())));
-            Assert.Throws<TypeError>(() => TsValue.from(3).InvokeDynamicWithThis(TsValue.undefined()));
+            Assert.Throws<TypeError>(() => TsValue.fromnative(3).InvokeDynamicWithThis(TsValue.undefined()));
             Assert.Throws<TypeError>(() => TsValue.undefined().InvokeDynamicWithThis(TsValue.undefined()));
         }
     }

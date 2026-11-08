@@ -36,7 +36,7 @@ public class OptionalStorageTests
         Assert.False(AbsentOptionalStorage.Is2(null));
         Assert.Null(AbsentOptionalStorage.As1(null));
         Assert.Throws<InvalidOperationException>(() => AbsentOptionalStorage.As2(null));
-        var broadNull = TsValue.from(null);
+        var broadNull = TsValue.fromnative<object?>(null);
         var broadUndefined = TsValue.undefined();
         Assert.Null(broadNull.unwrap());
         Assert.Null(broadUndefined.unwrap());
@@ -45,9 +45,9 @@ public class OptionalStorageTests
         Assert.True(JsValueOptionalStorage.Is1(broadUndefined));
         Assert.Null(JsValueOptionalStorage.As1(broadNull));
         Assert.Throws<InvalidOperationException>(() => JsValueOptionalStorage.As2(broadUndefined));
-        Assert.True(JsValueOptionalStorage.Is2(TsValue.from(0)));
-        Assert.True(JsValueOptionalStorage.Is2(TsValue.from(false)));
-        Assert.True(JsValueOptionalStorage.Is2(TsValue.from("")));
+        Assert.True(JsValueOptionalStorage.Is2(TsValue.fromnative(0)));
+        Assert.True(JsValueOptionalStorage.Is2(TsValue.fromnative(false)));
+        Assert.True(JsValueOptionalStorage.Is2(TsValue.fromnative("")));
     }
 
     [Fact]

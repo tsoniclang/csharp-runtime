@@ -12,7 +12,7 @@ public sealed class NativeExceptionSlotTests
     {
         var cause = new Exception("cause");
         var original = new InvalidOperationException("original", cause);
-        var value = TsValue.from(original);
+        var value = TsValue.fromnative(original);
         Assert.Same(original, value.unwrap());
         Assert.Equal(nameof(InvalidOperationException), value.ReadDynamicSlot("name").unwrap());
         Assert.Equal(original.Message, value.ReadDynamicSlot("message").unwrap());
@@ -21,7 +21,7 @@ public sealed class NativeExceptionSlotTests
         ExceptionDispatchInfo.SetCurrentStackTrace(original);
         Assert.Equal(original.StackTrace, value.ReadDynamicSlot("stack").unwrap());
         Assert.Same(cause, value.ReadDynamicSlot("cause").unwrap());
-        Assert.Null(TsValue.from(new Exception("absent")).ReadDynamicSlot("cause").unwrap());
+        Assert.Null(TsValue.fromnative(new Exception("absent")).ReadDynamicSlot("cause").unwrap());
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public sealed class NativeExceptionSlotTests
     {
         var cause = new Exception("cause");
         var original = new Error("original", cause) { name = "Explicit", stack = "authored" };
-        var value = TsValue.from(original);
+        var value = TsValue.fromnative(original);
         Assert.Same(original, value.unwrap());
         Assert.Equal(original.GetType().Name, value.ReadDynamicSlot("name").unwrap());
         Assert.Equal(original.Message, value.ReadDynamicSlot("message").unwrap());
@@ -49,7 +49,7 @@ public sealed class NativeExceptionSlotTests
     {
         var original = new Error("original") { name = "Explicit", stack = "authored" };
         Error alias = original;
-        var boxed = TsValue.from(original);
+        var boxed = TsValue.fromnative(original);
         Assert.Equal("Explicit", alias.name);
         Assert.Equal("original", alias.message);
         Assert.Equal("authored", alias.stack);
@@ -70,7 +70,7 @@ public sealed class NativeExceptionSlotTests
     public void NativeExceptionStackObservationEvaluatesItsVirtualGetterOnce()
     {
         var original = new ObservedException();
-        var value = TsValue.from(original);
+        var value = TsValue.fromnative(original);
         Assert.Equal("native stack", value.ReadDynamicSlot("stack").unwrap());
         Assert.Equal(1, original.Reads);
         Assert.Same(original, value.unwrap());
@@ -81,7 +81,7 @@ public sealed class NativeExceptionSlotTests
     {
         var cause = new Exception("cause");
         var original = new InvalidOperationException("original", cause);
-        var value = TsValue.from(original);
+        var value = TsValue.fromnative(original);
         for (var index = 0; index < 1024; index++)
         {
             GC.KeepAlive(value.ReadDynamicSlot("name").unwrap());

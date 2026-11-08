@@ -16,7 +16,7 @@ namespace Tsonic.CSharp.Runtime
         {
             foreach (var pair in source)
             {
-                _properties[pair.Key] = TsValue.from(pair.Value);
+                _properties[pair.Key] = TsValue.fromnative(pair.Value);
             }
         }
 
@@ -45,9 +45,13 @@ namespace Tsonic.CSharp.Runtime
 
         public TsValue WriteDynamicSlot(string key, object? value)
         {
-            var stored = TsValue.from(value);
-            _properties[key] = stored;
-            return stored;
+            return WriteDynamicSlot(key, TsValue.fromnative(value));
+        }
+
+        public TsValue WriteDynamicSlot(string key, TsValue value)
+        {
+            _properties[key] = value;
+            return value;
         }
 
         public TsValue ReadDynamicElement(object? key)
@@ -80,7 +84,7 @@ namespace Tsonic.CSharp.Runtime
 
         void IDynamicObject.WriteDynamicSlot(string key, object? value)
         {
-            _properties[key] = TsValue.from(value);
+            _properties[key] = TsValue.fromnative(value);
         }
     }
 }

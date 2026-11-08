@@ -5,57 +5,57 @@ namespace Tsonic.CSharp.Runtime;
 
 public readonly partial struct TsValue
 {
-    public static TsValue Add(object? left, object? right) => plus(left, right);
-    public static TsValue Subtract(object? left, object? right) => from(NativeNumbers.Subtract(unwrapForOperation(left), unwrapForOperation(right)));
-    public static TsValue Multiply(object? left, object? right) => from(NativeNumbers.Multiply(unwrapForOperation(left), unwrapForOperation(right)));
-    public static TsValue Divide(object? left, object? right) => from(NativeNumbers.Divide(unwrapForOperation(left), unwrapForOperation(right)));
-    public static TsValue Remainder(object? left, object? right) => from(NativeNumbers.Remainder(unwrapForOperation(left), unwrapForOperation(right)));
+    public static TsValue Add(object? left, object? right) => plus(left, right, valueCategory(left), valueCategory(right));
+    public static TsValue Subtract(object? left, object? right) => numericResult(NativeNumbers.Subtract(unwrapForOperation(left), unwrapForOperation(right)), valueCategory(left), valueCategory(right));
+    public static TsValue Multiply(object? left, object? right) => numericResult(NativeNumbers.Multiply(unwrapForOperation(left), unwrapForOperation(right)), valueCategory(left), valueCategory(right));
+    public static TsValue Divide(object? left, object? right) => numericResult(NativeNumbers.Divide(unwrapForOperation(left), unwrapForOperation(right)), valueCategory(left), valueCategory(right));
+    public static TsValue Remainder(object? left, object? right) => numericResult(NativeNumbers.Remainder(unwrapForOperation(left), unwrapForOperation(right)), valueCategory(left), valueCategory(right));
 
     public static bool Equal(TsValue left, TsValue right) => looseEquals(left._value, right._value);
     public static bool Equal(object? left, object? right) => looseEquals(left, right);
     public static bool NotEqual(TsValue left, TsValue right) => !looseEquals(left._value, right._value);
     public static bool NotEqual(object? left, object? right) => !looseEquals(left, right);
-    public static bool StrictEqual(TsValue left, TsValue right) => strictEquals(left._value, right._value);
-    public static bool StrictEqual(object? left, object? right) => strictEquals(left, right);
-    public static bool StrictNotEqual(TsValue left, TsValue right) => !strictEquals(left._value, right._value);
-    public static bool StrictNotEqual(object? left, object? right) => !strictEquals(left, right);
+    public static bool StrictEqual(TsValue left, TsValue right) => strictCategoryEquals(left._value, left.Category, right._value, right.Category);
+    public static bool StrictEqual(object? left, object? right) => strictCategoryEquals(UnwrapDynamicCarrier(left), valueCategory(left), UnwrapDynamicCarrier(right), valueCategory(right));
+    public static bool StrictNotEqual(TsValue left, TsValue right) => !StrictEqual(left, right);
+    public static bool StrictNotEqual(object? left, object? right) => !StrictEqual(left, right);
     public static bool LessThan(object? left, object? right) => tryCompare(left, right, out var comparison) && comparison < 0;
     public static bool LessThanOrEqual(object? left, object? right) => tryCompare(left, right, out var comparison) && comparison <= 0;
     public static bool GreaterThan(object? left, object? right) => tryCompare(left, right, out var comparison) && comparison > 0;
     public static bool GreaterThanOrEqual(object? left, object? right) => tryCompare(left, right, out var comparison) && comparison >= 0;
 
-    public static TsValue Positive(object? operand) => from(NativeNumbers.Positive(unwrapForOperation(operand)));
-    public static TsValue Negate(object? operand) => from(NativeNumbers.Negate(unwrapForOperation(operand)));
-    public static TsValue BitwiseNot(object? operand) => from(NativeNumbers.BitwiseNot(unwrapForOperation(operand)));
+    public static TsValue Positive(object? operand) => numericResult(NativeNumbers.Positive(unwrapForOperation(operand)), valueCategory(operand), valueCategory(operand));
+    public static TsValue Negate(object? operand) => numericResult(NativeNumbers.Negate(unwrapForOperation(operand)), valueCategory(operand), valueCategory(operand));
+    public static TsValue BitwiseNot(object? operand) => numericResult(NativeNumbers.BitwiseNot(unwrapForOperation(operand)), valueCategory(operand), valueCategory(operand));
     public static bool LogicalNot(object? operand) => !truthy(operand);
 
-    public static TsValue Coalesce(object? left, Func<object?> right) => isNullish(left) ? from(right()) : from(left);
-    public static TsValue And(object? left, Func<object?> right) => truthy(left) ? from(right()) : from(left);
-    public static TsValue Or(object? left, Func<object?> right) => truthy(left) ? from(left) : from(right());
+    public static TsValue Coalesce(object? left, Func<object?> right) => isNullish(left) ? fromnative(right()) : fromnative(left);
+    public static TsValue And(object? left, Func<object?> right) => truthy(left) ? fromnative(right()) : fromnative(left);
+    public static TsValue Or(object? left, Func<object?> right) => truthy(left) ? fromnative(left) : fromnative(right());
 
-    public static TsValue Add(TsValue left, TsValue right) => Add(left._value, right._value);
-    public static TsValue Add(TsValue left, object? right) => Add(left._value, right);
-    public static TsValue Add(object? left, TsValue right) => Add(left, right._value);
-    public static TsValue Subtract(TsValue left, TsValue right) => Subtract(left._value, right._value);
-    public static TsValue Subtract(TsValue left, object? right) => Subtract(left._value, right);
-    public static TsValue Subtract(object? left, TsValue right) => Subtract(left, right._value);
-    public static TsValue Multiply(TsValue left, TsValue right) => Multiply(left._value, right._value);
-    public static TsValue Multiply(TsValue left, object? right) => Multiply(left._value, right);
-    public static TsValue Multiply(object? left, TsValue right) => Multiply(left, right._value);
-    public static TsValue Divide(TsValue left, TsValue right) => Divide(left._value, right._value);
-    public static TsValue Divide(TsValue left, object? right) => Divide(left._value, right);
-    public static TsValue Divide(object? left, TsValue right) => Divide(left, right._value);
-    public static TsValue Remainder(TsValue left, TsValue right) => Remainder(left._value, right._value);
-    public static TsValue Remainder(TsValue left, object? right) => Remainder(left._value, right);
-    public static TsValue Remainder(object? left, TsValue right) => Remainder(left, right._value);
+    public static TsValue Add(TsValue left, TsValue right) => plus(left._value, right._value, left.Category, right.Category);
+    public static TsValue Add(TsValue left, object? right) => plus(left._value, right, left.Category, valueCategory(right));
+    public static TsValue Add(object? left, TsValue right) => plus(left, right._value, valueCategory(left), right.Category);
+    public static TsValue Subtract(TsValue left, TsValue right) => numericResult(NativeNumbers.Subtract(unwrapForOperation(left._value), unwrapForOperation(right._value)), left.Category, right.Category);
+    public static TsValue Subtract(TsValue left, object? right) => numericResult(NativeNumbers.Subtract(unwrapForOperation(left._value), unwrapForOperation(right)), left.Category, valueCategory(right));
+    public static TsValue Subtract(object? left, TsValue right) => numericResult(NativeNumbers.Subtract(unwrapForOperation(left), unwrapForOperation(right._value)), valueCategory(left), right.Category);
+    public static TsValue Multiply(TsValue left, TsValue right) => numericResult(NativeNumbers.Multiply(unwrapForOperation(left._value), unwrapForOperation(right._value)), left.Category, right.Category);
+    public static TsValue Multiply(TsValue left, object? right) => numericResult(NativeNumbers.Multiply(unwrapForOperation(left._value), unwrapForOperation(right)), left.Category, valueCategory(right));
+    public static TsValue Multiply(object? left, TsValue right) => numericResult(NativeNumbers.Multiply(unwrapForOperation(left), unwrapForOperation(right._value)), valueCategory(left), right.Category);
+    public static TsValue Divide(TsValue left, TsValue right) => numericResult(NativeNumbers.Divide(unwrapForOperation(left._value), unwrapForOperation(right._value)), left.Category, right.Category);
+    public static TsValue Divide(TsValue left, object? right) => numericResult(NativeNumbers.Divide(unwrapForOperation(left._value), unwrapForOperation(right)), left.Category, valueCategory(right));
+    public static TsValue Divide(object? left, TsValue right) => numericResult(NativeNumbers.Divide(unwrapForOperation(left), unwrapForOperation(right._value)), valueCategory(left), right.Category);
+    public static TsValue Remainder(TsValue left, TsValue right) => numericResult(NativeNumbers.Remainder(unwrapForOperation(left._value), unwrapForOperation(right._value)), left.Category, right.Category);
+    public static TsValue Remainder(TsValue left, object? right) => numericResult(NativeNumbers.Remainder(unwrapForOperation(left._value), unwrapForOperation(right)), left.Category, valueCategory(right));
+    public static TsValue Remainder(object? left, TsValue right) => numericResult(NativeNumbers.Remainder(unwrapForOperation(left), unwrapForOperation(right._value)), valueCategory(left), right.Category);
     public static bool Equal(TsValue left, object? right) => Equal(left._value, right);
     public static bool Equal(object? left, TsValue right) => Equal(left, right._value);
     public static bool NotEqual(TsValue left, object? right) => NotEqual(left._value, right);
     public static bool NotEqual(object? left, TsValue right) => NotEqual(left, right._value);
-    public static bool StrictEqual(TsValue left, object? right) => StrictEqual(left._value, right);
-    public static bool StrictEqual(object? left, TsValue right) => StrictEqual(left, right._value);
-    public static bool StrictNotEqual(TsValue left, object? right) => StrictNotEqual(left._value, right);
-    public static bool StrictNotEqual(object? left, TsValue right) => StrictNotEqual(left, right._value);
+    public static bool StrictEqual(TsValue left, object? right) => strictCategoryEquals(left._value, left.Category, UnwrapDynamicCarrier(right), valueCategory(right));
+    public static bool StrictEqual(object? left, TsValue right) => strictCategoryEquals(UnwrapDynamicCarrier(left), valueCategory(left), right._value, right.Category);
+    public static bool StrictNotEqual(TsValue left, object? right) => !StrictEqual(left, right);
+    public static bool StrictNotEqual(object? left, TsValue right) => !StrictEqual(left, right);
     public static bool LessThan(TsValue left, TsValue right) => LessThan(left._value, right._value);
     public static bool LessThan(TsValue left, object? right) => LessThan(left._value, right);
     public static bool LessThan(object? left, TsValue right) => LessThan(left, right._value);
@@ -68,23 +68,30 @@ public readonly partial struct TsValue
     public static bool GreaterThanOrEqual(TsValue left, TsValue right) => GreaterThanOrEqual(left._value, right._value);
     public static bool GreaterThanOrEqual(TsValue left, object? right) => GreaterThanOrEqual(left._value, right);
     public static bool GreaterThanOrEqual(object? left, TsValue right) => GreaterThanOrEqual(left, right._value);
-    public static TsValue Positive(TsValue operand) => Positive(operand._value);
-    public static TsValue Negate(TsValue operand) => Negate(operand._value);
-    public static TsValue BitwiseNot(TsValue operand) => BitwiseNot(operand._value);
-    public static bool LogicalNot(TsValue operand) => LogicalNot(operand._value);
-    public static TsValue Coalesce(TsValue left, Func<object?> right) => isNullish(left._value) ? from(right()) : left;
-    public static TsValue And(TsValue left, Func<object?> right) => truthy(left._value) ? from(right()) : left;
-    public static TsValue Or(TsValue left, Func<object?> right) => truthy(left._value) ? left : from(right());
-    public static bool ToDynamicBoolean(TsValue value) => truthy(value._value);
+    public static TsValue Positive(TsValue operand) => numericResult(NativeNumbers.Positive(unwrapForOperation(operand._value)), operand.Category, operand.Category);
+    public static TsValue Negate(TsValue operand) => numericResult(NativeNumbers.Negate(unwrapForOperation(operand._value)), operand.Category, operand.Category);
+    public static TsValue BitwiseNot(TsValue operand) => numericResult(NativeNumbers.BitwiseNot(unwrapForOperation(operand._value)), operand.Category, operand.Category);
+    public static bool LogicalNot(TsValue operand) => !truthy(operand._value, operand.Category);
+    public static TsValue Coalesce(TsValue left, Func<object?> right) => left.isUndefined() ? fromnative(right()) : left;
+    public static TsValue And(TsValue left, Func<object?> right) => truthy(left._value, left.Category) ? fromnative(right()) : left;
+    public static TsValue Or(TsValue left, Func<object?> right) => truthy(left._value, left.Category) ? left : fromnative(right());
+    public static bool ToDynamicBoolean(TsValue value) => truthy(value._value, value.Category);
     public static TsValue ApplyDynamicVoid(TsValue operand) => undefined();
 
-    private static TsValue plus(object? left, object? right)
+    private static TsValue plus(object? left, object? right, SourceValueCategory leftCategory, SourceValueCategory rightCategory)
     {
         var leftValue = unwrapForOperation(left);
         var rightValue = unwrapForOperation(right);
         return leftValue is string || rightValue is string
-            ? from(toJsString(leftValue) + toJsString(rightValue))
-            : from(NativeNumbers.Add(leftValue, rightValue));
+            ? fromnative(toJsString(leftValue) + toJsString(rightValue))
+            : numericResult(NativeNumbers.Add(leftValue, rightValue), leftCategory, rightCategory);
+    }
+
+    private static TsValue numericResult(object? value, SourceValueCategory left, SourceValueCategory right)
+    {
+        var category = left == SourceValueCategory.Number || right == SourceValueCategory.Number
+            ? SourceValueCategory.Number : SourceValueCategory.BigInt;
+        return fromsource(value, category);
     }
 
     private static bool tryCompare(object? left, object? right, out int comparison)
@@ -137,8 +144,19 @@ public readonly partial struct TsValue
         return leftValue!.GetType() == rightValue!.GetType() && Equals(leftValue, rightValue);
     }
 
+    private static bool strictCategoryEquals(object? left, SourceValueCategory leftCategory, object? right, SourceValueCategory rightCategory)
+    {
+        if (leftCategory != rightCategory) return false;
+        if (leftCategory == SourceValueCategory.Absent) return true;
+        if (leftCategory is SourceValueCategory.Object or SourceValueCategory.Function or SourceValueCategory.Symbol)
+            return ReferenceEquals(left, right) || left is not null && left.GetType().IsValueType &&
+                left.GetType() == right?.GetType() && left.Equals(right);
+        return strictEquals(left, right);
+    }
+
     private static bool truthy(object? value)
     {
+        if (value is TsValue stored) return truthy(stored._value, stored.Category);
         var unwrapped = unwrapForOperation(value);
         return unwrapped switch
         {
@@ -161,9 +179,17 @@ public readonly partial struct TsValue
             nuint number => number != 0,
             Int128 number => number != 0,
             UInt128 number => number != 0,
+            System.Numerics.BigInteger number => !number.IsZero,
             _ => true
         };
     }
+
+    private static bool truthy(object? value, SourceValueCategory category) => category switch
+    {
+        SourceValueCategory.Absent => false,
+        SourceValueCategory.Object or SourceValueCategory.Function or SourceValueCategory.Symbol => true,
+        _ => truthy(value),
+    };
 
     private static string toJsString(object? value)
     {
@@ -189,6 +215,7 @@ public readonly partial struct TsValue
             nuint number => number.ToString(CultureInfo.InvariantCulture),
             Int128 number => number.ToString(CultureInfo.InvariantCulture),
             UInt128 number => number.ToString(CultureInfo.InvariantCulture),
+            System.Numerics.BigInteger number => number.ToString(CultureInfo.InvariantCulture),
             _ => "[object Object]"
         };
     }

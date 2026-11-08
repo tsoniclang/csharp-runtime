@@ -28,14 +28,14 @@ namespace Tsonic.CSharp.Runtime
 
         public TsValue InvokeDynamicWithThis(TsValue receiver, params object?[] arguments)
         {
-            return _call(receiver, arguments.Select(TsValue.from).ToArray());
+            return _call(receiver, arguments.Select(TsValue.fromnative).ToArray());
         }
 
         public TsValue ConstructDynamic(params object?[] arguments)
         {
             return _construct is null
                 ? throw new TypeError("Function value is not a constructor.")
-                : _construct(arguments.Select(TsValue.from).ToArray());
+                : _construct(arguments.Select(TsValue.fromnative).ToArray());
         }
 
         public TsValue ReadDynamicSlot(string key)
@@ -44,6 +44,11 @@ namespace Tsonic.CSharp.Runtime
         }
 
         public TsValue WriteDynamicSlot(string key, object? value)
+        {
+            return _properties.WriteDynamicSlot(key, value);
+        }
+
+        public TsValue WriteDynamicSlot(string key, TsValue value)
         {
             return _properties.WriteDynamicSlot(key, value);
         }
