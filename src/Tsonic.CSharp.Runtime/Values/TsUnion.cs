@@ -35,6 +35,7 @@ namespace Tsonic.CSharp.Runtime
 
         bool IClosedUnionValue.IsInitialized => true;
         bool IClosedUnionValue.IsSupported => true;
+        SourceValueCategory IClosedUnionValue.NativeCategory => _value.Category;
 
         object? IClosedUnionValue.UnionValue => unwrap();
 

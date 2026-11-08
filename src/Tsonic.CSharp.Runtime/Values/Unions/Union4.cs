@@ -31,6 +31,15 @@ public readonly struct Union<T1, T2, T3, T4> : IEquatable<Union<T1, T2, T3, T4>>
         _ => throw new InvalidOperationException("Union is not initialized."),
     };
 
+    SourceValueCategory IClosedUnionValue.NativeCategory => _index switch
+    {
+        1 => TsValue.nativecategory(_value1),
+        2 => TsValue.nativecategory(_value2),
+        3 => TsValue.nativecategory(_value3),
+        4 => TsValue.nativecategory(_value4),
+        _ => throw new InvalidOperationException("Union is not initialized."),
+    };
+
     object? IClosedUnionValue.UnionValue => _index switch
     {
         1 => _value1,

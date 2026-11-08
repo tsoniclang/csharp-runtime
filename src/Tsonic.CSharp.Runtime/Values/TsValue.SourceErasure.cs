@@ -15,8 +15,7 @@ public readonly partial struct TsValue
         if (typeof(TValue) == typeof(TsValue)) return Unsafe.As<TValue, TsValue>(ref value);
         object? payload = value;
         if (payload is TsValue stored) return stored;
-        validateClosedValue(payload);
-        return new TsValue(payload, nativeCategory(payload));
+        return new TsValue(payload, nativecategory(payload));
     }
 
     private static TsValue SourceValue<TValue>(TValue value, SourceValueCategory category)

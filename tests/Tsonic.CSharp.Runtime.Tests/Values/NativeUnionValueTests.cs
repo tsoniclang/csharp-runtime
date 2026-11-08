@@ -26,6 +26,44 @@ public class NativeUnionValueTests
     }
 
     [Fact]
+    public void NativeCategoryQueryDoesNotReplaceAnExistingSourceCategory()
+    {
+        Assert.Equal(SourceValueCategory.Number, TsValue.nativecategory(7));
+        Assert.Equal(SourceValueCategory.BigInt, TsValue.nativecategory(7L));
+        Assert.Equal(SourceValueCategory.BigInt, TsValue.nativecategory(System.Numerics.BigInteger.One << 300));
+        Assert.Equal(SourceValueCategory.Number, TsValue.nativecategory((int?)7));
+        Assert.Equal(SourceValueCategory.Absent, TsValue.nativecategory((int?)null));
+        var source = TsValue.fromsource<long, SourceNumberCategory<long>>(7);
+        Assert.Equal(SourceValueCategory.Number, TsValue.nativecategory(source));
+        var original = Union<TsValue, long>.From1(source);
+        Assert.Equal(SourceValueCategory.Number, TsValue.fromnative(original).Category);
+        Assert.Equal(SourceValueCategory.BigInt, TsValue.fromnative(Union<TsValue, long>.From2(7)).Category);
+        Assert.Throws<NotSupportedException>(() => TsValue.nativecategory(new OpenPayload()));
+        Assert.Throws<InvalidOperationException>(() => TsValue.nativecategory(default(Union<int, string>)));
+    }
+
+    [Fact]
+    public void DeepPreboxedNativeUnionsRetainTheirPayloadAndRejectOpenAndDefaultLeaves()
+    {
+        object present = 7;
+        object open = new OpenPayload();
+        object uninitialized = default(Union<int, string>);
+        for (var depth = 0; depth < 128; depth++)
+        {
+            present = Union<int, object>.From2(present);
+            open = Union<int, object>.From2(open);
+            uninitialized = Union<int, object>.From2(uninitialized);
+        }
+        var admitted = TsValue.fromnative(present);
+        Assert.Equal(SourceValueCategory.Number, admitted.Category);
+        Assert.Same(present, admitted.unwrap());
+        Assert.Throws<NotSupportedException>(() => TsValue.fromnative(open));
+        Assert.Throws<InvalidOperationException>(() => TsValue.fromnative(uninitialized));
+        Assert.Throws<NotSupportedException>(() => TsValue.nativecategory(open));
+        Assert.Throws<InvalidOperationException>(() => TsValue.nativecategory(uninitialized));
+    }
+
+    [Fact]
     public void TypedPayloadAdmissionAddsNoBoxingBeyondTheOriginalNativeUnion()
     {
         AssertNativeUnionBoxingOnly(42);

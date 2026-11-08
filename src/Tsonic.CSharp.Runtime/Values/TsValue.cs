@@ -29,24 +29,7 @@ namespace Tsonic.CSharp.Runtime
         }
 
         private static SourceValueCategory valueCategory(object? value) => value is TsValue stored
-            ? stored.Category : value is TsUnion union ? union.value().Category : nativeCategory(value);
-
-        private static SourceValueCategory nativeCategory(object? value)
-        {
-            while (value is IClosedUnionValue union) value = union.UnionValue;
-            if (value is TsValue stored) return stored.Category;
-            var payload = UnwrapClosedValue(value);
-            return payload switch
-            {
-                null => SourceValueCategory.Absent,
-                bool => SourceValueCategory.Boolean,
-                string => SourceValueCategory.String,
-                long or ulong or Int128 or UInt128 or BigInteger => SourceValueCategory.BigInt,
-                double or float or decimal or Half or int or uint or byte or sbyte or short or ushort or nint or nuint => SourceValueCategory.Number,
-                TsFunction or Delegate => SourceValueCategory.Function,
-                _ => SourceValueCategory.Object,
-            };
-        }
+            ? stored.Category : value is TsUnion union ? union.value().Category : nativecategory(value);
 
         public static TsValue undefined()
         {
@@ -254,11 +237,7 @@ namespace Tsonic.CSharp.Runtime
 
         public static string ApplyDynamicTypeof(TsValue operand) => categoryName(operand.Category);
 
-        public static string ApplyDynamicTypeof(object? operand)
-        {
-            validateClosedValue(operand);
-            return categoryName(valueCategory(operand));
-        }
+        public static string ApplyDynamicTypeof(object? operand) => categoryName(nativecategory(operand));
 
         private static string categoryName(SourceValueCategory category) => category switch
         {
