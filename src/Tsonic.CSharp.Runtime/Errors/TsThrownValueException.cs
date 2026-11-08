@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Tsonic.CSharp.Runtime
 {
@@ -16,12 +17,26 @@ namespace Tsonic.CSharp.Runtime
 
         public static Exception from<TValue>(TValue value)
         {
-            var payload = value is TsValue closed
-                ? TsValue.UnwrapClosedValue(closed)
-                : TsValue.UnwrapClosedValue(value);
+            if (typeof(TValue) == typeof(TsValue))
+                return FromSourceValue(Unsafe.As<TValue, TsValue>(ref value));
+            if (value is TsValue closed) return FromSourceValue(closed);
+            var payload = TsValue.UnwrapClosedValue(value);
             return payload is Exception exception
                 ? exception
-                : value is TsValue source ? new TsThrownValueException(source) : new TsThrownValueException(payload);
+                : new TsThrownValueException(payload);
+        }
+
+        private TsThrownValueException(TsValue value)
+            : base("JavaScript value was thrown.")
+        {
+            this.value = TsValue.UnwrapClosedValue(value);
+            _sourceValue = value;
+        }
+
+        private static Exception FromSourceValue(TsValue value)
+        {
+            var payload = TsValue.UnwrapClosedValue(value);
+            return payload is Exception exception ? exception : new TsThrownValueException(value);
         }
 
         public static TsValue toValue(Exception exception)

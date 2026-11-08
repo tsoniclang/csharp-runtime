@@ -28,8 +28,13 @@ namespace Tsonic.CSharp.Runtime
                 throw new NotSupportedException("TsValue requires a closed TypeScript runtime carrier.");
         }
 
-        private static SourceValueCategory valueCategory(object? value) => value is TsValue stored
-            ? stored.Category : value is TsUnion union ? union.value().Category : nativeCategory(value);
+        private static SourceValueCategory valueCategory(object? value)
+        {
+            if (value is TsValue stored) return stored.Category;
+            if (value is TsUnion union) return union.value().Category;
+            validateClosedValue(value);
+            return nativeCategory(value);
+        }
 
         private static SourceValueCategory nativeCategory(object? value)
         {
