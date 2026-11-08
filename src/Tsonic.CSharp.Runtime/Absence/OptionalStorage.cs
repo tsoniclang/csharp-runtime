@@ -54,7 +54,7 @@ public readonly struct AbsentOptionalStorage : IOptionalStorage<object?, object?
 
 public readonly struct JsValueOptionalStorage : IOptionalStorage<TsValue, TsValue>
 {
-    public static TsValue From1(object? value) => TsValue.from(null);
+    public static TsValue From1(object? value) => TsValue.fromnative<object?>(null);
     public static TsValue From2(TsValue value) => value;
     public static bool Is1(TsValue value) => value.isUndefined();
     public static bool Is2(TsValue value) => !value.isUndefined();

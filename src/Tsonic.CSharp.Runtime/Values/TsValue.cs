@@ -12,104 +12,45 @@ namespace Tsonic.CSharp.Runtime
     public readonly partial struct TsValue
     {
         private readonly object? _value;
+        public SourceValueCategory Category { get; }
 
-        private TsValue(object? value)
+        private TsValue(object? value, SourceValueCategory category)
         {
             _value = value;
+            Category = category;
         }
 
-        public static TsValue from(object? value)
+        private static void validateClosedValue(object? value)
         {
-            if (value is TsValue typed)
-            {
-                return typed;
-            }
-
             if (value is IClosedUnionValue { IsInitialized: false })
-            {
                 throw new InvalidOperationException("Union is not initialized.");
-            }
-
             if (!isSupported(value))
-            {
                 throw new NotSupportedException("TsValue requires a closed TypeScript runtime carrier.");
-            }
-            return new TsValue(value);
         }
 
-        public static TsValue from<T1, T2>(Union<T1, T2> value)
-        {
-            return from((object)value);
-        }
+        private static SourceValueCategory valueCategory(object? value) => value is TsValue stored
+            ? stored.Category : value is TsUnion union ? union.value().Category : nativeCategory(value);
 
-        public static TsValue from<T1, T2>(Union<T1, T2>? value)
+        private static SourceValueCategory nativeCategory(object? value)
         {
-            return value.HasValue ? from(value.Value) : undefined();
-        }
-
-        public static TsValue from<T1, T2, T3>(Union<T1, T2, T3> value)
-        {
-            return from((object)value);
-        }
-
-        public static TsValue from<T1, T2, T3>(Union<T1, T2, T3>? value)
-        {
-            return value.HasValue ? from(value.Value) : undefined();
-        }
-
-        public static TsValue from<T1, T2, T3, T4>(Union<T1, T2, T3, T4> value)
-        {
-            return from((object)value);
-        }
-
-        public static TsValue from<T1, T2, T3, T4>(Union<T1, T2, T3, T4>? value)
-        {
-            return value.HasValue ? from(value.Value) : undefined();
-        }
-
-        public static TsValue from<T1, T2, T3, T4, T5>(Union<T1, T2, T3, T4, T5> value)
-        {
-            return from((object)value);
-        }
-
-        public static TsValue from<T1, T2, T3, T4, T5>(Union<T1, T2, T3, T4, T5>? value)
-        {
-            return value.HasValue ? from(value.Value) : undefined();
-        }
-
-        public static TsValue from<T1, T2, T3, T4, T5, T6>(Union<T1, T2, T3, T4, T5, T6> value)
-        {
-            return from((object)value);
-        }
-
-        public static TsValue from<T1, T2, T3, T4, T5, T6>(Union<T1, T2, T3, T4, T5, T6>? value)
-        {
-            return value.HasValue ? from(value.Value) : undefined();
-        }
-
-        public static TsValue from<T1, T2, T3, T4, T5, T6, T7>(Union<T1, T2, T3, T4, T5, T6, T7> value)
-        {
-            return from((object)value);
-        }
-
-        public static TsValue from<T1, T2, T3, T4, T5, T6, T7>(Union<T1, T2, T3, T4, T5, T6, T7>? value)
-        {
-            return value.HasValue ? from(value.Value) : undefined();
-        }
-
-        public static TsValue from<T1, T2, T3, T4, T5, T6, T7, T8>(Union<T1, T2, T3, T4, T5, T6, T7, T8> value)
-        {
-            return from((object)value);
-        }
-
-        public static TsValue from<T1, T2, T3, T4, T5, T6, T7, T8>(Union<T1, T2, T3, T4, T5, T6, T7, T8>? value)
-        {
-            return value.HasValue ? from(value.Value) : undefined();
+            while (value is IClosedUnionValue union) value = union.UnionValue;
+            if (value is TsValue stored) return stored.Category;
+            var payload = UnwrapClosedValue(value);
+            return payload switch
+            {
+                null => SourceValueCategory.Absent,
+                bool => SourceValueCategory.Boolean,
+                string => SourceValueCategory.String,
+                long or ulong or Int128 or UInt128 or BigInteger => SourceValueCategory.BigInt,
+                double or float or decimal or Half or int or uint or byte or sbyte or short or ushort or nint or nuint => SourceValueCategory.Number,
+                TsFunction or Delegate => SourceValueCategory.Function,
+                _ => SourceValueCategory.Object,
+            };
         }
 
         public static TsValue undefined()
         {
-            return new TsValue(null);
+            return new TsValue(null, SourceValueCategory.Absent);
         }
 
         public static TsValue CreateDynamicObject(params object?[] keyValues)
@@ -128,7 +69,7 @@ namespace Tsonic.CSharp.Runtime
                 }
                 target.WriteDynamicSlot(key, keyValues[index + 1]);
             }
-            return from(target);
+            return fromnative(target);
         }
 
         public object? unwrap()
@@ -138,36 +79,37 @@ namespace Tsonic.CSharp.Runtime
 
         public bool isUndefined()
         {
-            return unwrapForOperation(_value) is null;
+            return Category == SourceValueCategory.Absent;
         }
 
         public bool IsArray()
         {
-            return unwrapForOperation(_value) is TsArray or IDynamicArray;
+            return UnwrapClosedValue(_value) is TsArray or IDynamicArray or Array;
         }
 
-        public int ArrayLength => unwrapForOperation(_value) switch
+        public int ArrayLength => UnwrapClosedValue(_value) switch
         {
             TsArray target => target.length,
             IDynamicArray target => target.Length,
+            Array target => target.Length,
             _ => throw new TypeError("A native array length requires an array backing.")
         };
 
         public TsValue ReadDynamicSlot(string key)
         {
-            return unwrapForOperation(_value) switch
+            return UnwrapClosedValue(_value) switch
             {
                 null => throw nullishReadError(key),
                 TsObject target => target.ReadDynamicSlot(key),
                 TsArray target => target.ReadDynamicSlot(key),
                 TsFunction target => target.ReadDynamicSlot(key),
                 Exception target => readExceptionSlot(target, key),
-                IDynamicObject target => target.TryReadDynamicSlot(key, out var value) ? from(value) : undefined(),
+                IDynamicObject target => target.TryReadDynamicSlot(key, out var value) ? fromnative(value) : undefined(),
                 IDictionary<string, TsValue> target => target.TryGetValue(key, out var value) ? value : undefined(),
                 IReadOnlyDictionary<string, TsValue> target => target.TryGetValue(key, out var value) ? value : undefined(),
-                IDictionary<string, object?> target => target.TryGetValue(key, out var value) ? from(value) : undefined(),
-                IReadOnlyDictionary<string, object?> target => target.TryGetValue(key, out var value) ? from(value) : undefined(),
-                string target when key == "length" => from(target.Length),
+                IDictionary<string, object?> target => target.TryGetValue(key, out var value) ? fromnative(value) : undefined(),
+                IReadOnlyDictionary<string, object?> target => target.TryGetValue(key, out var value) ? fromnative(value) : undefined(),
+                string target when key == "length" => fromnative(target.Length),
                 ITsClosedValueCarrier => throw new NotSupportedException("A closed identity carrier does not expose dynamic properties."),
                 _ => undefined()
             };
@@ -180,13 +122,23 @@ namespace Tsonic.CSharp.Runtime
 
         public TsValue ReadDynamicSlotOptional(string key)
         {
-            return isNullish(_value) ? undefined() : ReadDynamicSlot(key);
+            return isUndefined() ? undefined() : ReadDynamicSlot(key);
         }
 
         public TsValue WriteDynamicSlot(string key, object? value)
         {
-            var stored = from(value);
-            switch (unwrapForOperation(_value))
+            return WriteNativeSlot(_value, key, value);
+        }
+
+        public TsValue WriteDynamicSlot(string key, TsValue value)
+        {
+            return WriteNativeSlot(_value, key, value);
+        }
+
+        private static TsValue WriteNativeSlot<TValue>(object? receiver, string key, TValue value)
+        {
+            var stored = fromnative(value);
+            switch (unwrapForOperation(receiver))
             {
                 case null:
                     throw nullishWriteError(key);
@@ -217,10 +169,15 @@ namespace Tsonic.CSharp.Runtime
 
         public TsValue ReadDynamicElementOptional(Func<object?> key)
         {
-            return isNullish(_value) ? undefined() : ReadDynamicElement(key());
+            return isUndefined() ? undefined() : ReadDynamicElement(key());
         }
 
         public TsValue WriteDynamicElement(object? key, object? value)
+        {
+            return WriteDynamicSlot(propertyKey(key), value);
+        }
+
+        public TsValue WriteDynamicElement(object? key, TsValue value)
         {
             return WriteDynamicSlot(propertyKey(key), value);
         }
@@ -232,7 +189,7 @@ namespace Tsonic.CSharp.Runtime
 
         public TsValue InvokeDynamicOptional(Func<object?[]> arguments)
         {
-            return isNullish(_value)
+            return isUndefined()
                 ? undefined()
                 : InvokeDynamicWithThis(undefined(), arguments());
         }
@@ -243,7 +200,7 @@ namespace Tsonic.CSharp.Runtime
             bool optionalCall,
             Func<object?[]> arguments)
         {
-            if (optionalReceiver && isNullish(_value))
+            if (optionalReceiver && isUndefined())
             {
                 return undefined();
             }
@@ -261,7 +218,7 @@ namespace Tsonic.CSharp.Runtime
             bool optionalCall,
             Func<object?[]> arguments)
         {
-            if (optionalReceiver && isNullish(_value))
+            if (optionalReceiver && isUndefined())
             {
                 return undefined();
             }
@@ -277,14 +234,14 @@ namespace Tsonic.CSharp.Runtime
             TsValue receiver,
             params object?[] arguments)
         {
-            return unwrapForOperation(_value) is TsFunction target
+            return UnwrapClosedValue(_value) is TsFunction target
                 ? target.InvokeDynamicWithThis(receiver, arguments)
                 : throw new TypeError("Value is not callable.");
         }
 
         public TsValue ConstructDynamic(params object?[] arguments)
         {
-            return unwrapForOperation(_value) is TsFunction target
+            return UnwrapClosedValue(_value) is TsFunction target
                 ? target.ConstructDynamic(arguments)
                 : throw new TypeError("Value is not a constructor.");
         }
@@ -295,22 +252,21 @@ namespace Tsonic.CSharp.Runtime
             return undefined();
         }
 
-        public static string ApplyDynamicTypeof(TsValue operand) => ApplyDynamicTypeof(operand._value);
+        public static string ApplyDynamicTypeof(TsValue operand) => categoryName(operand.Category);
 
-        public static string ApplyDynamicTypeof(object? operand)
+        public static string ApplyDynamicTypeof(object? operand) => categoryName(valueCategory(operand));
+
+        private static string categoryName(SourceValueCategory category) => category switch
         {
-            var unwrapped = unwrapForOperation(operand);
-            return unwrapped switch
-            {
-                null => "object",
-                bool => "boolean",
-                string => "string",
-                long or ulong or Int128 or UInt128 or BigInteger => "bigint",
-                double or float or decimal or Half or int or uint or byte or sbyte or short or ushort or nint or nuint => "number",
-                TsFunction or Delegate => "function",
-                _ => "object"
-            };
-        }
+            SourceValueCategory.Absent or SourceValueCategory.Object => "object",
+            SourceValueCategory.Boolean => "boolean",
+            SourceValueCategory.Number => "number",
+            SourceValueCategory.BigInt => "bigint",
+            SourceValueCategory.String => "string",
+            SourceValueCategory.Symbol => "symbol",
+            SourceValueCategory.Function => "function",
+            _ => throw new InvalidOperationException("The closed value has no native category."),
+        };
 
         public static bool ToDynamicBoolean(object? value)
         {
@@ -322,7 +278,12 @@ namespace Tsonic.CSharp.Runtime
             return UnwrapDynamicCarrier(value) is T;
         }
 
-        public static T CastDynamic<T>(TsValue value) => CastDynamic<T>(value._value);
+        public static T CastDynamic<T>(TsValue value)
+        {
+            if (TryCastCarrier(value._value, out T result)) return result;
+            throw new TypeError(value.isUndefined() ? "Cannot cast null or undefined to the requested closed value carrier."
+                : "TsValue cannot cross the requested typed boundary because the closed carrier value is not assignable.");
+        }
 
         public static T CastDynamic<T>(object? value)
         {
@@ -340,13 +301,17 @@ namespace Tsonic.CSharp.Runtime
 
         internal static bool TryCastDynamic<T>(object? value, out T result)
         {
-            var carrier = UnwrapDynamicCarrier(value);
+            return TryCastCarrier(UnwrapDynamicCarrier(value), out result);
+        }
+
+        private static bool TryCastCarrier<T>(object? carrier, out T result)
+        {
             if (carrier is T direct)
             {
                 result = direct;
                 return true;
             }
-            var unwrapped = unwrapForOperation(carrier);
+            var unwrapped = UnwrapClosedValue(carrier);
             if (unwrapped is T typed)
             {
                 result = typed;
@@ -365,7 +330,7 @@ namespace Tsonic.CSharp.Runtime
             return false;
         }
 
-        internal static bool isSupported<Value>(Value value)
+        public static bool isSupported<Value>(Value value)
         {
             return value switch
             {
@@ -407,23 +372,25 @@ namespace Tsonic.CSharp.Runtime
         {
             return key switch
             {
-                "name" => from(error.GetType().Name),
-                "message" => from(error.Message),
-                "stack" => from(error.StackTrace),
-                "cause" => from(error.InnerException),
+                "name" => fromnative(error.GetType().Name),
+                "message" => fromnative(error.Message),
+                "stack" => fromnative(error.StackTrace),
+                "cause" => fromnative(error.InnerException),
                 _ => undefined()
             };
         }
 
         private static bool isNullish(object? value)
         {
+            if (value is TsValue stored) return stored.Category == SourceValueCategory.Absent;
             var unwrapped = unwrapForOperation(value);
             return unwrapped is null;
         }
 
         internal static object? UnwrapDynamicCarrier(object? value)
         {
-            var unwrapped = value is TsValue typed ? typed._value : value;
+            if (value is TsValue typed) return typed._value;
+            var unwrapped = value;
             if (!isSupported(unwrapped))
             {
                 throw closedCarrierError();
@@ -433,6 +400,8 @@ namespace Tsonic.CSharp.Runtime
 
         private static object? unwrapForOperation(object? value)
         {
+            if (value is TsValue stored && stored.Category is SourceValueCategory.Object or SourceValueCategory.Function or SourceValueCategory.Symbol)
+                return stored._value;
             return UnwrapClosedValue(UnwrapDynamicCarrier(value));
         }
 

@@ -38,12 +38,12 @@ public class EmptyObjectTests
     {
         var first = new EmptyObject();
         var second = new EmptyObject();
-        var wrapped = TsValue.from(first);
+        var wrapped = TsValue.fromnative(first);
         Assert.Same(first, wrapped.unwrap());
-        Assert.True(TsValue.StrictEqual(wrapped, TsValue.from(first)));
-        Assert.False(TsValue.StrictEqual(wrapped, TsValue.from(second)));
+        Assert.True(TsValue.StrictEqual(wrapped, TsValue.fromnative(first)));
+        Assert.False(TsValue.StrictEqual(wrapped, TsValue.fromnative(second)));
         Assert.Throws<System.NotSupportedException>(() => wrapped.ReadDynamicSlot("field"));
-        Assert.Throws<System.NotSupportedException>(() => TsValue.from(new object()));
+        Assert.Throws<System.NotSupportedException>(() => TsValue.fromnative(new object()));
     }
 
     [Fact]

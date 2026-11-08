@@ -20,9 +20,9 @@ public class NativeUnionValueTests
             Union<int, string, bool, byte, long, short, double, OpenPayload>.From8(open),
             Union<int, object>.From2(Union<string, OpenPayload>.From2(open)),
         };
-        foreach (var value in invalid) Assert.Throws<NotSupportedException>(() => TsValue.from(value));
-        Assert.Equal(7, TsValue.CastDynamic<int>(TsValue.from(Union<int, OpenPayload>.From1(7))));
-        Assert.True(TsValue.from(Union<int, OpenPayload?>.From2(null)).isUndefined());
+        foreach (var value in invalid) Assert.Throws<NotSupportedException>(() => TsValue.fromnative(value));
+        Assert.Equal(7, TsValue.CastDynamic<int>(TsValue.fromnative(Union<int, OpenPayload>.From1(7))));
+        Assert.True(TsValue.fromnative(Union<int, OpenPayload?>.From2(null)).isUndefined());
     }
 
     [Fact]
@@ -37,13 +37,13 @@ public class NativeUnionValueTests
     private static void AssertNativeUnionBoxingOnly<Payload>(Payload payload)
     {
         var original = Union<Payload, string>.From1(payload);
-        for (var index = 0; index < 1000; index++) GC.KeepAlive(TsValue.from(original));
+        for (var index = 0; index < 1000; index++) GC.KeepAlive(TsValue.fromnative(original));
         var outputs = new object[1000];
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < outputs.Length; index++) outputs[index] = original;
         var nativeBytes = GC.GetAllocatedBytesForCurrentThread() - before;
         before = GC.GetAllocatedBytesForCurrentThread();
-        for (var index = 0; index < outputs.Length; index++) outputs[index] = TsValue.from(original).unwrap()!;
+        for (var index = 0; index < outputs.Length; index++) outputs[index] = TsValue.fromnative(original).unwrap()!;
         var selectedBytes = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.True(nativeBytes > 0);
         Assert.Equal(nativeBytes, selectedBytes);
@@ -69,34 +69,34 @@ public class NativeUnionValueTests
         };
         foreach (var original in values)
         {
-            var value = TsValue.from(original);
+            var value = TsValue.fromnative(original);
             Assert.Same(original, value.unwrap());
             Assert.Equal("ready", TsValue.UnwrapClosedValue(value));
             Assert.Equal("string", TsValue.ApplyDynamicTypeof(value));
             Assert.Equal("ready", TsValue.CastDynamic<string>(value));
         }
-        Assert.True(TsValue.CastDynamic<Union<int, string>>(TsValue.from(values[0])).Is2());
-        Assert.True(TsValue.CastDynamic<Union<int, bool, byte, long, short, double, ulong, string>>(TsValue.from(values[6])).Is8());
-        Assert.Throws<TypeError>(() => TsValue.CastDynamic<Union<string, int>>(TsValue.from(values[0])));
+        Assert.True(TsValue.CastDynamic<Union<int, string>>(TsValue.fromnative(values[0])).Is2());
+        Assert.True(TsValue.CastDynamic<Union<int, bool, byte, long, short, double, ulong, string>>(TsValue.fromnative(values[6])).Is8());
+        Assert.Throws<TypeError>(() => TsValue.CastDynamic<Union<string, int>>(TsValue.fromnative(values[0])));
     }
 
     [Fact]
     public void TypedAndBoxedUnionAdmissionHaveOneNativeRepresentation()
     {
-        Assert.IsType<Union<int, string>>(TsValue.from(Union<int, string>.From2("ready")).unwrap());
-        Assert.IsType<Union<int, bool, string>>(TsValue.from(Union<int, bool, string>.From3("ready")).unwrap());
-        Assert.IsType<Union<int, bool, byte, string>>(TsValue.from(Union<int, bool, byte, string>.From4("ready")).unwrap());
-        Assert.IsType<Union<int, bool, byte, long, string>>(TsValue.from(Union<int, bool, byte, long, string>.From5("ready")).unwrap());
-        Assert.IsType<Union<int, bool, byte, long, short, string>>(TsValue.from(Union<int, bool, byte, long, short, string>.From6("ready")).unwrap());
-        Assert.IsType<Union<int, bool, byte, long, short, double, string>>(TsValue.from(Union<int, bool, byte, long, short, double, string>.From7("ready")).unwrap());
-        Assert.IsType<Union<int, bool, byte, long, short, double, ulong, string>>(TsValue.from(Union<int, bool, byte, long, short, double, ulong, string>.From8("ready")).unwrap());
-        Assert.True(TsValue.from((Union<int, string>?)null).isUndefined());
-        Assert.True(TsValue.from((Union<int, bool, string>?)null).isUndefined());
-        Assert.True(TsValue.from((Union<int, bool, byte, string>?)null).isUndefined());
-        Assert.True(TsValue.from((Union<int, bool, byte, long, string>?)null).isUndefined());
-        Assert.True(TsValue.from((Union<int, bool, byte, long, short, string>?)null).isUndefined());
-        Assert.True(TsValue.from((Union<int, bool, byte, long, short, double, string>?)null).isUndefined());
-        Assert.True(TsValue.from((Union<int, bool, byte, long, short, double, ulong, string>?)null).isUndefined());
+        Assert.IsType<Union<int, string>>(TsValue.fromnative(Union<int, string>.From2("ready")).unwrap());
+        Assert.IsType<Union<int, bool, string>>(TsValue.fromnative(Union<int, bool, string>.From3("ready")).unwrap());
+        Assert.IsType<Union<int, bool, byte, string>>(TsValue.fromnative(Union<int, bool, byte, string>.From4("ready")).unwrap());
+        Assert.IsType<Union<int, bool, byte, long, string>>(TsValue.fromnative(Union<int, bool, byte, long, string>.From5("ready")).unwrap());
+        Assert.IsType<Union<int, bool, byte, long, short, string>>(TsValue.fromnative(Union<int, bool, byte, long, short, string>.From6("ready")).unwrap());
+        Assert.IsType<Union<int, bool, byte, long, short, double, string>>(TsValue.fromnative(Union<int, bool, byte, long, short, double, string>.From7("ready")).unwrap());
+        Assert.IsType<Union<int, bool, byte, long, short, double, ulong, string>>(TsValue.fromnative(Union<int, bool, byte, long, short, double, ulong, string>.From8("ready")).unwrap());
+        Assert.True(TsValue.fromnative((Union<int, string>?)null).isUndefined());
+        Assert.True(TsValue.fromnative((Union<int, bool, string>?)null).isUndefined());
+        Assert.True(TsValue.fromnative((Union<int, bool, byte, string>?)null).isUndefined());
+        Assert.True(TsValue.fromnative((Union<int, bool, byte, long, string>?)null).isUndefined());
+        Assert.True(TsValue.fromnative((Union<int, bool, byte, long, short, string>?)null).isUndefined());
+        Assert.True(TsValue.fromnative((Union<int, bool, byte, long, short, double, string>?)null).isUndefined());
+        Assert.True(TsValue.fromnative((Union<int, bool, byte, long, short, double, ulong, string>?)null).isUndefined());
     }
 
     [Fact]
@@ -109,8 +109,8 @@ public class NativeUnionValueTests
             default(Union<int, bool, byte, long, short, double, string>),
             default(Union<int, bool, byte, long, short, double, ulong, string>),
         };
-        foreach (var value in values) Assert.Throws<InvalidOperationException>(() => TsValue.from(value));
-        Assert.Throws<InvalidOperationException>(() => TsValue.from(default(Union<int, string>)));
+        foreach (var value in values) Assert.Throws<InvalidOperationException>(() => TsValue.fromnative(value));
+        Assert.Throws<InvalidOperationException>(() => TsValue.fromnative(default(Union<int, string>)));
     }
 
     [Fact]
@@ -118,11 +118,11 @@ public class NativeUnionValueTests
     {
         var original = Union<string?, string?>.From2(null);
         var native = Union<int, object>.From2(original);
-        var nested = TsValue.from(TsUnion.From(2, 2, native));
+        var nested = TsValue.fromnative(TsUnion.From(2, 2, native));
         Assert.Null(TsValue.UnwrapClosedValue(nested));
         Assert.True(nested.isUndefined());
-        Assert.Equal(original, TsValue.CastDynamic<Union<string?, string?>>(TsValue.from(original)));
-        var exact = TsValue.from(Union<double, ulong>.From2(18_446_744_073_709_551_615UL));
+        Assert.Equal(original, TsValue.CastDynamic<Union<string?, string?>>(TsValue.fromnative(original)));
+        var exact = TsValue.fromnative(Union<double, ulong>.From2(18_446_744_073_709_551_615UL));
         Assert.Equal(ulong.MaxValue, TsValue.CastDynamic<ulong>(exact));
         Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(exact));
         Assert.True(TsValue.StrictEqual(exact, ulong.MaxValue));
@@ -133,16 +133,16 @@ public class NativeUnionValueTests
     {
         var original = Union<int, string>.From2("ready");
         var outputs = new object?[1000];
-        for (var index = 0; index < outputs.Length; index++) outputs[index] = TsValue.from(original).unwrap();
+        for (var index = 0; index < outputs.Length; index++) outputs[index] = TsValue.fromnative(original).unwrap();
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < outputs.Length; index++) outputs[index] = original;
         var nativeBytes = GC.GetAllocatedBytesForCurrentThread() - before;
         before = GC.GetAllocatedBytesForCurrentThread();
-        for (var index = 0; index < outputs.Length; index++) outputs[index] = TsValue.from(original).unwrap();
+        for (var index = 0; index < outputs.Length; index++) outputs[index] = TsValue.fromnative(original).unwrap();
         var generatedBytes = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.True(nativeBytes > 0);
         Assert.Equal(nativeBytes, generatedBytes);
-        var erased = TsValue.from(outputs[0]);
+        var erased = TsValue.fromnative(outputs[0]);
         var matches = 0;
         before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < 1000; index++)

@@ -14,14 +14,14 @@ namespace Tsonic.CSharp.Runtime.Tests
         {
             var source = new TaskCompletionSource<ulong>();
             var task = source.Task;
-            var value = TsValue.from(task);
+            var value = TsValue.fromnative(task);
             Assert.Same(task, value.unwrap());
             Assert.Same(task, TsValue.CastDynamic<Task<ulong>>(value));
             Assert.False(task.IsCompleted);
             Assert.Equal("object", TsValue.ApplyDynamicTypeof(value));
-            Assert.True(TsValue.StrictEqual(value, TsValue.from(task)));
-            Assert.False(TsValue.StrictEqual(value, TsValue.from(Task.CompletedTask)));
-            Assert.Throws<NotSupportedException>(() => TsValue.from(new OpenObject()));
+            Assert.True(TsValue.StrictEqual(value, TsValue.fromnative(task)));
+            Assert.False(TsValue.StrictEqual(value, TsValue.fromnative(Task.CompletedTask)));
+            Assert.Throws<NotSupportedException>(() => TsValue.fromnative(new OpenObject()));
             source.SetResult(18_446_744_073_709_551_615UL);
             Assert.Equal(ulong.MaxValue, await TsValue.CastDynamic<Task<ulong>>(value));
         }
@@ -31,12 +31,12 @@ namespace Tsonic.CSharp.Runtime.Tests
         {
             var error = new InvalidOperationException("native completion");
             var task = Task.FromException<int>(error);
-            var value = TsValue.from(task);
+            var value = TsValue.fromnative(task);
             Assert.Same(task, value.unwrap());
             var observed = await Assert.ThrowsAsync<InvalidOperationException>(() => TsValue.CastDynamic<Task<int>>(value));
             Assert.Same(error, observed);
             var canceled = Task.FromCanceled<int>(new System.Threading.CancellationToken(true));
-            Assert.Same(canceled, TsValue.from(canceled).unwrap());
+            Assert.Same(canceled, TsValue.fromnative(canceled).unwrap());
             Assert.True(canceled.IsCanceled);
         }
 
@@ -44,13 +44,13 @@ namespace Tsonic.CSharp.Runtime.Tests
         public void NativeTaskAdmission_HasNoWrapperOrPerReadAllocation()
         {
             var task = Task.CompletedTask;
-            for (var index = 0; index < 1000; index++) TsValue.from(task);
+            for (var index = 0; index < 1000; index++) TsValue.fromnative(task);
             var before = GC.GetAllocatedBytesForCurrentThread();
             var matches = 0;
             for (var index = 0; index < 1000; index++)
             {
-                var left = TsValue.from(task);
-                var right = TsValue.from(task);
+                var left = TsValue.fromnative(task);
+                var right = TsValue.fromnative(task);
                 if (TsValue.StrictEqual(left, right)) matches++;
             }
             var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
@@ -62,11 +62,11 @@ namespace Tsonic.CSharp.Runtime.Tests
         public void ArrayPredicate_InspectsClosedPayloadWithoutAllocationOrCopy()
         {
             var array = new TsArray();
-            var direct = TsValue.from(array);
-            var nested = TsValue.from(TsUnion.From(1, 2, TsUnion.From(1, 2, array)));
-            var dynamic = TsValue.from(new TestDynamicArray());
+            var direct = TsValue.fromnative(array);
+            var nested = TsValue.fromnative(TsUnion.From(1, 2, TsUnion.From(1, 2, array)));
+            var dynamic = TsValue.fromnative(new TestDynamicArray());
             var absent = TsValue.undefined();
-            var text = TsValue.from("text");
+            var text = TsValue.fromnative("text");
             var record = TsValue.CreateDynamicObject("length", 3);
             for (var index = 0; index < 1000; index++)
             {
@@ -87,7 +87,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             Assert.Equal(3000, matches);
             Assert.Equal(0, allocated);
             Assert.Same(array, direct.unwrap());
-            Assert.Throws<NotSupportedException>(() => TsValue.from(new int[] { 1, 2 }));
+            Assert.Throws<NotSupportedException>(() => TsValue.fromnative(new int[] { 1, 2 }));
         }
 
         [Fact]
@@ -103,11 +103,11 @@ namespace Tsonic.CSharp.Runtime.Tests
         {
             var array = new TsArray();
             array.WriteDynamicSlot("0", "first");
-            var direct = TsValue.from(array);
-            var nested = TsValue.from(TsUnion.From(1, 2, array));
+            var direct = TsValue.fromnative(array);
+            var nested = TsValue.fromnative(TsUnion.From(1, 2, array));
             var dynamicArray = new TestDynamicArray();
             dynamicArray.TrySetAt(0, "first");
-            var dynamicValue = TsValue.from(dynamicArray);
+            var dynamicValue = TsValue.fromnative(dynamicArray);
             for (var index = 0; index < 1000; index++)
             {
                 Assert.Equal(1, direct.ArrayLength);
@@ -128,8 +128,8 @@ namespace Tsonic.CSharp.Runtime.Tests
             Assert.Equal(2, direct.ArrayLength);
             Assert.Equal(2, nested.ArrayLength);
             Assert.Equal(2, dynamicValue.ArrayLength);
-            foreach (var value in new[] { TsValue.undefined(), TsValue.from("text"),
-                TsValue.CreateDynamicObject("length", 3), TsValue.from(Task.CompletedTask) })
+            foreach (var value in new[] { TsValue.undefined(), TsValue.fromnative("text"),
+                TsValue.CreateDynamicObject("length", 3), TsValue.fromnative(Task.CompletedTask) })
             {
                 Assert.Throws<TypeError>(() => value.ArrayLength);
             }
@@ -151,7 +151,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         [Fact]
         public void ArrayCarrier_PreservesHolesAndLengthMutation()
         {
-            var value = TsValue.from(new TsArray());
+            var value = TsValue.fromnative(new TsArray());
 
             value.WriteDynamicElement(2, "third");
 
@@ -169,7 +169,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         {
             var receiver = TsValue.CreateDynamicObject("prefix", "hello ");
             receiver.WriteDynamicSlot("greet", new TsFunction((selectedReceiver, arguments) =>
-                TsValue.from(
+                TsValue.fromnative(
                     (string)selectedReceiver.ReadDynamicSlot("prefix").unwrap()! +
                     (string)arguments[0].unwrap()!)));
 
@@ -185,7 +185,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         [Fact]
         public void UnionCarrier_PreservesExactActiveArm()
         {
-            var value = TsValue.from(Union<int, string>.From2("ready"));
+            var value = TsValue.fromnative(Union<int, string>.From2("ready"));
 
             var union = Assert.IsType<Union<int, string>>(value.unwrap());
             Assert.True(union.Is2());
@@ -199,7 +199,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         [Fact]
         public void UnsupportedOpenObject_FailsBeforeDynamicUse()
         {
-            Assert.Throws<NotSupportedException>(() => TsValue.from(new OpenObject()));
+            Assert.Throws<NotSupportedException>(() => TsValue.fromnative(new OpenObject()));
             Assert.Throws<NotSupportedException>(() => TsValue.ApplyDynamicTypeof(new OpenObject()));
         }
 
@@ -213,19 +213,19 @@ namespace Tsonic.CSharp.Runtime.Tests
             object[] bigints = { long.MinValue, ulong.MaxValue, Int128.MinValue, UInt128.MaxValue };
             foreach (var original in numbers)
             {
-                var value = TsValue.from(original);
+                var value = TsValue.fromnative(original);
                 Assert.Same(original, value.unwrap());
                 Assert.Equal("number", TsValue.ApplyDynamicTypeof(value));
             }
             foreach (var original in bigints)
             {
-                var value = TsValue.from(original);
+                var value = TsValue.fromnative(original);
                 Assert.Same(original, value.unwrap());
                 Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(value));
             }
-            Assert.Equal("boolean", TsValue.ApplyDynamicTypeof(TsValue.from(true)));
-            Assert.Equal("string", TsValue.ApplyDynamicTypeof(TsValue.from("native")));
-            Assert.Equal("object", TsValue.ApplyDynamicTypeof(TsValue.from(null)));
+            Assert.Equal("boolean", TsValue.ApplyDynamicTypeof(TsValue.fromnative(true)));
+            Assert.Equal("string", TsValue.ApplyDynamicTypeof(TsValue.fromnative("native")));
+            Assert.Equal("object", TsValue.ApplyDynamicTypeof(TsValue.fromnative<object?>(null)));
         }
 
         [Fact]
@@ -238,13 +238,13 @@ namespace Tsonic.CSharp.Runtime.Tests
             };
             foreach (var original in originals)
             {
-                var value = TsValue.from(original);
+                var value = TsValue.fromnative(original);
                 Assert.Same(original, value.unwrap());
                 Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(value));
                 Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(original));
                 Assert.Equal((BigInteger)original, TsValue.CastDynamic<BigInteger>(value));
             }
-            var union = TsValue.from(Union<string, BigInteger>.From2((BigInteger.One << 256) + 1));
+            var union = TsValue.fromnative(Union<string, BigInteger>.From2((BigInteger.One << 256) + 1));
             Assert.Equal("bigint", TsValue.ApplyDynamicTypeof(union));
             Assert.Equal((BigInteger.One << 256) + 1, TsValue.CastDynamic<BigInteger>(union));
         }
@@ -253,7 +253,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         public void IntrinsicBigInteger_CategoryReadsDoNotReboxTheRetainedValue()
         {
             object original = (BigInteger.One << 256) + 1;
-            var value = TsValue.from(original);
+            var value = TsValue.fromnative(original);
             for (var index = 0; index < 1000; index++) TsValue.ApplyDynamicTypeof(value);
             var before = GC.GetAllocatedBytesForCurrentThread();
             var matches = 0;
@@ -277,7 +277,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             var wrapper = Assert.IsType<TsThrownValueException>(nonNative);
             Assert.Equal("source value", wrapper.value);
             var closed = Assert.IsType<TsThrownValueException>(
-                TsThrownValueException.from(TsValue.from("source value")));
+                TsThrownValueException.from(TsValue.fromnative("source value")));
             Assert.Equal("source value", closed.value);
         }
 
@@ -285,13 +285,13 @@ namespace Tsonic.CSharp.Runtime.Tests
         public void ThrownValueTransport_AddsOnlyTheRequiredNativeExceptionFrame()
         {
             var native = new InvalidOperationException("native");
-            var nativeValue = TsValue.from(native);
-            var payload = TsValue.from("source value");
+            var nativeValue = TsValue.fromnative(native);
+            var payload = TsValue.fromnative("source value");
             Assert.Same(native, TsThrownValueException.from(nativeValue));
             var thrown = Assert.IsType<TsThrownValueException>(TsThrownValueException.from(payload));
             Assert.Same(payload.unwrap(), thrown.value);
             var union = Union<Exception, string>.From1(native);
-            Assert.Same(native, TsThrownValueException.from(TsValue.from(union)));
+            Assert.Same(native, TsThrownValueException.from(TsValue.fromnative(union)));
             Measure(nativeValue, true);
             Measure(payload, false);
             Measure(payload, true);
@@ -318,7 +318,7 @@ namespace Tsonic.CSharp.Runtime.Tests
             var thrown = Assert.IsType<TsThrownValueException>(TsThrownValueException.from(payload));
             Assert.Same(payload, thrown.value);
             Assert.Throws<NotSupportedException>(() => TsThrownValueException.toValue(thrown));
-            Assert.Throws<NotSupportedException>(() => TsValue.from(payload));
+            Assert.Throws<NotSupportedException>(() => TsValue.fromnative(payload));
             var absent = Assert.IsType<TsThrownValueException>(TsThrownValueException.from<object?>(null));
             Assert.Null(absent.value);
             Assert.True(TsThrownValueException.toValue(absent).isUndefined());
@@ -352,7 +352,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         [Fact]
         public void ErrorCarrier_ExposesClosedSourceProperties()
         {
-            var error = TsValue.from(new TypeError("invalid"));
+            var error = TsValue.fromnative(new TypeError("invalid"));
 
             Assert.Equal("TypeError", error.ReadDynamicSlot("name").unwrap());
             Assert.Equal("invalid", error.ReadDynamicSlot("message").unwrap());
@@ -362,7 +362,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         public void DynamicObjectInterface_ExtendsCoreWithoutAJsDependency()
         {
             var target = new TestDynamicObject();
-            var value = TsValue.from(target);
+            var value = TsValue.fromnative(target);
 
             value.WriteDynamicSlot("answer", 42);
 
@@ -374,7 +374,7 @@ namespace Tsonic.CSharp.Runtime.Tests
         public void DynamicArrayInterface_ExtendsCoreWithoutAJsDependency()
         {
             var target = new TestDynamicArray();
-            var value = TsValue.from(target);
+            var value = TsValue.fromnative(target);
 
             value.WriteDynamicElement(1, "second");
 

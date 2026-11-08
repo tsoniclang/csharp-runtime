@@ -16,7 +16,7 @@ namespace Tsonic.CSharp.Runtime
             }
             ArmIndex = armIndex;
             ArmCount = armCount;
-            _value = TsValue.from(value);
+            _value = TsValue.fromnative(value);
         }
 
         public int ArmIndex { get; }
